@@ -36,3 +36,11 @@ class MuhendisIsletmeAdmin(admin.ModelAdmin):
     list_display  = ['muhendis', 'isletme', 'durum', 'talep_tarihi']
     list_filter   = ['durum']
     search_fields = ['muhendis__username', 'isletme__ad']
+
+from .models import CiftciBayii
+
+@admin.register(CiftciBayii)
+class CiftciBayiiAdmin(admin.ModelAdmin):
+    list_display  = ('ciftci', 'bayii', 'durum', 'baslatan', 'talep_tarihi')
+    list_filter   = ('durum', 'aktif')
+    search_fields = ('ciftci__ad', 'bayii__firma_adi')

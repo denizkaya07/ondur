@@ -212,3 +212,23 @@ class MuhendisIsletme(models.Model):
 
 
 # CifciBayii — katalog uygulaması tamamlandıktan sonra eklenecek
+class CiftciBayii(models.Model):
+    class Durum(models.TextChoices):
+        BEKLIYOR  = 'bekliyor',  'Bekliyor'
+        ONAYLANDI = 'onaylandi', 'Onaylandı'
+        REDDEDILDI = 'reddedildi', 'Reddedildi'
+
+    ciftci     = models.ForeignKey(Ciftci, on_delete=models.CASCADE, related_name='bayii_iliskileri')
+    bayii      = models.ForeignKey('katalog.Bayii', on_delete=models.CASCADE, related_name='ciftci_iliskileri')
+    baslatan   = models.ForeignKey('accounts.Kullanici', on_delete=models.SET_NULL, null=True, related_name='baslattigi_iliskiler')
+    durum      = models.CharField(max_length=20, choices=Durum.choices, default=Durum.BEKLIYOR)
+    talep_tarihi = models.DateTimeField(auto_now_add=True)
+    yanit_tarihi = models.DateTimeField(null=True, blank=True)
+    aktif      = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('ciftci', 'bayii')
+        verbose_name = 'Çiftçi-Bayii İlişkisi'
+
+    def __str__(self):
+        return f"{self.ciftci} — {self.bayii} ({self.durum})"

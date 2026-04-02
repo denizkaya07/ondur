@@ -58,3 +58,15 @@ class MuhendisIsletmeSerializer(serializers.ModelSerializer):
     class Meta:
         model  = MuhendisIsletme
         fields = ['id', 'isletme', 'durum', 'talep_tarihi', 'yanit_tarihi']
+
+from .models import CiftciBayii
+
+class CiftciBayiiSerializer(serializers.ModelSerializer):
+    bayii_adi = serializers.CharField(source='bayii.firma_adi', read_only=True)
+    ciftci_ad = serializers.CharField(source='ciftci.ad', read_only=True)
+
+    class Meta:
+        model  = CiftciBayii
+        fields = ['id', 'ciftci', 'ciftci_ad', 'bayii', 'bayii_adi',
+                  'baslatan', 'durum', 'talep_tarihi', 'yanit_tarihi', 'aktif']
+        read_only_fields = ['baslatan', 'durum', 'talep_tarihi', 'yanit_tarihi']

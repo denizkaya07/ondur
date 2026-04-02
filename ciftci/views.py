@@ -1,14 +1,17 @@
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from .models import Ciftci, Isletme, MuhendisIsletme, Urun, UrunCesit
+from .models import Ciftci, Isletme, MuhendisIsletme, Urun, UrunCesit, CiftciBayii
 from .serializers import (
     CiftciSerializer, CiftciKisaSerializer,
     IsletmeSerializer, MuhendisIsletmeSerializer,
-    UrunSerializer, UrunCesitSerializer
+    UrunSerializer, UrunCesitSerializer,
+    CiftciBayiiSerializer
 )
+from katalog.models import Bayii
 
 
 class IsMuhendis(permissions.BasePermission):
@@ -38,7 +41,7 @@ class UrunCesitListView(generics.ListAPIView):
         return UrunCesit.objects.filter(urun_id=urun_id, aktif=True)
 
 
-# ── MÜHENDİS — ÇİFTÇİ ──
+# ── MÜHENDİS – ÇİFTÇİ ──
 
 class CiftciAraView(APIView):
     permission_classes = [IsMuhendis]
@@ -168,3 +171,70 @@ class TalepYanitlaView(APIView):
         talep.save()
 
         return Response(MuhendisIsletmeSerializer(talep).data)
+
+
+# ── ÇİFTÇİ – BAYİİ ──
+
+class CiftciBayiiListView(generics.ListAPIView):
+    serializer_class   = CiftciBayiiSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.rol == 'ciftci':
+            return CiftciBayii.objects.filter(ciftci__kullanici=user, aktif=True)
+        elif user.rol == 'bayii':
+            return CiftciBayii.objects.filter(bayii__kullanici=user, aktif=True)
+        return CiftciBayii.objects.none()
+
+
+class CiftciBayiiTalepView(generics.CreateAPIView):
+    serializer_class   = CiftciBayiiSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.rol == 'ciftci':
+            ciftci   = user.ciftci
+            bayii_id = self.request.data.get('bayii')
+            bayii    = Bayii.objects.get(pk=bayii_id)
+            serializer.save(ciftci=ciftci, bayii=bayii, baslatan=user)
+        elif user.rol == 'bayii':
+            bayii     = user.bayii
+            ciftci_id = self.request.data.get('ciftci')
+            ciftci    = Ciftci.objects.get(pk=ciftci_id)
+            serializer.save(ciftci=ciftci, bayii=bayii, baslatan=user)
+
+
+class CiftciBayiiYanitView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.rol == 'ciftci':
+            return CiftciBayii.objects.filter(ciftci__kullanici=user)
+        elif user.rol == 'bayii':
+            return CiftciBayii.objects.filter(bayii__kullanici=user)
+        return CiftciBayii.objects.none()
+
+    def patch(self, request, pk):
+        user   = request.user
+        iliski = self.get_queryset().get(pk=pk)
+
+        if iliski.baslatan == user:
+            return Response(
+                {'hata': 'Talebi başlatan yanıt veremez.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        karar = request.data.get('durum')
+        if karar not in ['onaylandi', 'reddedildi']:
+            return Response(
+                {'hata': 'Geçersiz karar.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        iliski.durum        = karar
+        iliski.yanit_tarihi = timezone.now()
+        iliski.save()
+        return Response(CiftciBayiiSerializer(iliski).data)
