@@ -1,3 +1,20 @@
 from django.urls import path
+from . import views
 
-urlpatterns = []
+urlpatterns = [
+    # Genel katalog (tüm roller)
+    path('ilaclar/', views.IlacListView.as_view(), name='ilac-list'),
+    path('ilaclar/<int:pk>/', views.IlacDetayView.as_view(), name='ilac-detay'),
+    path('gubreler/', views.GubreListView.as_view(), name='gubre-list'),
+    path('gubreler/<int:pk>/', views.GubreDetayView.as_view(), name='gubre-detay'),
+
+    # Üretici
+    path('uretici/ilaclarim/', views.UreticiIlacListView.as_view(), name='uretici-ilac-list'),
+    path('uretici/ilaclarim/<int:pk>/', views.UreticiIlacGuncelleView.as_view(), name='uretici-ilac-guncelle'),
+    path('uretici/gubrelerim/', views.UreticiGubreListView.as_view(), name='uretici-gubre-list'),
+
+    # Bayii
+    path('bayii/urunlerim/', views.BayiiUrunListView.as_view(), name='bayii-urun-list'),
+    path('bayii/analiz/', views.BayiiAnalizView.as_view(), name='bayii-analiz'),
+    path('bayii/bolgem/', views.BayiiBolgesiView.as_view(), name='bayii-bolge'),
+]
