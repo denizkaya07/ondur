@@ -1,0 +1,15 @@
+git init
+git add .
+git commit -m "ilk kayıt — proje dökümanı"
+git branch -M main
+git remote add origin https://github.com/denizkaya07/ondur.git
+git push -u origin main
+ github token.
+
+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
+
+
+Username: admin
+Email: (boş bırakabilirsin, Enter)
+Password: güçlü bir şifre///////////Ankara06
+Password (again):Ankara06
