@@ -56,3 +56,6 @@ class ReceteYorumAdmin(admin.ModelAdmin):
 class ReceteFotografAdmin(admin.ModelAdmin):
     list_display = ['recete', 'yukleyen', 'tip', 'olusturma']
     list_filter  = ['tip']
+
+
+    

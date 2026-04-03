@@ -80,6 +80,14 @@ class ReceteSerializer(serializers.ModelSerializer):
                            source='isletme.ciftci.ad',
                            read_only=True
                        )
+    ciftci_soyad     = serializers.CharField(
+                           source='isletme.ciftci.soyad',
+                           read_only=True
+                       )
+    ciftci_telefon   = serializers.CharField(
+                           source='isletme.ciftci.telefon',
+                           read_only=True
+                       )
     muhendis_ad      = serializers.CharField(
                            source='muhendis.get_full_name',
                            read_only=True
@@ -88,7 +96,7 @@ class ReceteSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Recete
         fields = [
-            'id', 'isletme', 'isletme_ad', 'ciftci_ad',
+            'id', 'isletme', 'isletme_ad', 'ciftci_ad', 'ciftci_soyad', 'ciftci_telefon',
             'muhendis', 'muhendis_ad',
             'tani', 'tarih', 'uygulama_yontemi', 'durum',
             'muhendis_notu', 'hatirlatma', 'ciftciye_not',

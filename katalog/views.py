@@ -2,6 +2,7 @@ from rest_framework import generics, permissions, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Count, Sum, F, ExpressionWrapper, DecimalField
+from ondur.permissions import IsUretici, IsBayii
 from .models import Ilac, Gubre, EtkenMadde, BayiiUrun, Bayii
 from .serializers import (
     IlacSerializer, IlacKisaSerializer,
@@ -9,16 +10,6 @@ from .serializers import (
     EtkenMaddeSerializer, BayiiUrunSerializer,
     BayiiSerializer
 )
-
-
-class IsUretici(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.rol == 'uretici'
-
-
-class IsBayii(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.rol == 'bayii'
 
 
 # ── İLAÇ ──

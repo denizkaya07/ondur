@@ -20,5 +20,5 @@ urlpatterns = [
     path('bayiilerim/',         views.CiftciBayiiListView.as_view(),   name='ciftci-bayiilerim'),
     path('bayii/talep/',        views.CiftciBayiiTalepView.as_view(),  name='ciftci-bayii-talep'),
     path('bayii/yanit/<int:pk>/', views.CiftciBayiiYanitView.as_view(), name='ciftci-bayii-yanit'),
-
+    path('isletme/<int:isletme_id>/toprak-analiz/', views.ToprakAnalizListView.as_view(), name='toprak-analiz'),
 ]

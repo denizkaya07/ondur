@@ -142,6 +142,8 @@ export default function Takvim() {
   const bugunStr = bugun.toISOString().slice(0, 10)
   const seciliGunZiyaretler = seciliGun ? gunZiyaretler(seciliGun) : []
 
+  if (yukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
+
   return (
     <div style={s.kapsayici}>
       {/* Üst bar */}
@@ -333,6 +335,7 @@ const s = {
   dot:            { width: '7px', height: '7px', borderRadius: '50%' },
   dotFazla:       { fontSize: '0.65rem', color: '#aaa' },
 
+  yuklenme:   { padding: '2rem', textAlign: 'center', color: '#888' },
   gunDetay:    { marginTop: '1rem', background: '#fff', border: '1px solid #e8e8e8', borderRadius: '12px', padding: '1rem' },
   gunDetayUst: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
   gunDetayBaslik: { fontWeight: '600', color: '#333', fontSize: '0.95rem' },

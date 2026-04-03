@@ -1,20 +1,35 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
+import { AuthContext } from '../../context/AuthContext'
 
 export default function Talepler() {
+  const navigate = useNavigate()
+  const { kullanici, yukleniyor: authYukleniyor } = useContext(AuthContext)
   const [talepler, setTalepler]     = useState([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [islemde, setIslemde]       = useState(null)
+  const [hata, setHata]             = useState('')
 
   const yukle = () => {
+    if (!kullanici || kullanici.rol !== 'ciftci') {
+      navigate('/giris')
+      return
+    }
     setYukleniyor(true)
     api.get('/ciftci/talepler/')
       .then(res => setTalepler(res.data))
-      .catch(console.error)
+      .catch(err => {
+        console.error(err)
+        setHata('Talepler yüklenirken hata oluştu.')
+      })
       .finally(() => setYukleniyor(false))
   }
 
-  useEffect(() => { yukle() }, [])
+  useEffect(() => {
+    if (authYukleniyor) return
+    yukle()
+  }, [authYukleniyor, kullanici])
 
   const yanitla = async (id, karar) => {
     setIslemde(id)
@@ -28,7 +43,9 @@ export default function Talepler() {
     }
   }
 
-  if (yukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
+  if (authYukleniyor || yukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
+
+  if (hata) return <div style={s.hataMsg}>{hata}</div>
 
   return (
     <div style={s.kapsayici}>

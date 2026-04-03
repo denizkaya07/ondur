@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
+import { AuthContext } from '../../context/AuthContext'
 
 const DURUM_RENK = {
   taslak:    { bg: '#fff8e1', color: '#b7791f' },
@@ -15,18 +17,29 @@ const TIP_ETIKET = {
 }
 
 export default function Recetelerim() {
+  const navigate = useNavigate()
+  const { kullanici, yukleniyor: authYukleniyor } = useContext(AuthContext)
   const [receteler, setReceteler]   = useState([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [secili, setSecili]         = useState(null)
   const [detay, setDetay]           = useState(null)
   const [detayYukleniyor, setDetayYukleniyor] = useState(false)
+  const [hata, setHata]             = useState('')
 
   useEffect(() => {
+    if (authYukleniyor) return
+    if (!kullanici || kullanici.rol !== 'ciftci') {
+      navigate('/giris')
+      return
+    }
     api.get('/recete/benim/')
       .then(res => setReceteler(res.data))
-      .catch(console.error)
+      .catch(err => {
+        console.error(err)
+        setHata('Reçeteler yüklenirken hata oluştu.')
+      })
       .finally(() => setYukleniyor(false))
-  }, [])
+  }, [authYukleniyor, kullanici, navigate])
 
   const kartTikla = async (r) => {
     if (secili?.id === r.id) {
@@ -46,7 +59,9 @@ export default function Recetelerim() {
     }
   }
 
-  if (yukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
+  if (authYukleniyor || yukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
+
+  if (hata) return <div style={s.hataMsg}>{hata}</div>
 
   return (
     <div style={s.kapsayici}>
@@ -65,7 +80,7 @@ export default function Recetelerim() {
               <div style={s.kartUst}>
                 <div style={s.kartSol}>
                   <p style={s.tani}>{r.tani}</p>
-                  <p style={s.alt}>{r.isletme_ad} · {r.tarih} · {r.muhendis_ad}</p>
+                  <p style={s.alt}>{r.isletme_ad} · {r.tarih} · {r.muhendis_ad} · {r.ciftci_ad} {r.ciftci_soyad} ({r.ciftci_telefon})</p>
                 </div>
                 <span style={{...s.badge, ...DURUM_RENK[r.durum]}}>
                   {r.durum === 'onaylandi' ? 'Onaylandı' : r.durum}

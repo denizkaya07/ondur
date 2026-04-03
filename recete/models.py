@@ -21,7 +21,7 @@ class Recete(models.Model):
                            related_name='yazilan_receteler',
                            on_delete=models.CASCADE
                        )
-    tani             = models.CharField(max_length=300)
+    tani             = models.CharField(max_length=300, blank=True)
     tarih            = models.DateField()
     uygulama_yontemi = models.CharField(max_length=100)
     durum            = models.CharField(
@@ -43,6 +43,11 @@ class Recete(models.Model):
         verbose_name        = 'Reçete'
         verbose_name_plural = 'Reçeteler'
         ordering            = ['-olusturma']
+        indexes             = [
+            models.Index(fields=['muhendis', '-olusturma']),
+            models.Index(fields=['isletme', '-tarih']),
+            models.Index(fields=['durum']),
+        ]
 
 
 class UygulamaAdimi(models.Model):

@@ -1,7 +1,11 @@
+/* eslint react-refresh/only-export-components: 0 */
 import { createContext, useContext, useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
 import api from '../services/api'
 
 const AuthContext = createContext()
+
+export { AuthContext }
 
 export function AuthProvider({ children }) {
   const [kullanici, setKullanici] = useState(null)
@@ -39,6 +43,10 @@ const girisYap = async (telefon, sifre) => {
       {children}
     </AuthContext.Provider>
   )
+}
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 }
 
 export const useAuth = () => useContext(AuthContext)

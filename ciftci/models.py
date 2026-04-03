@@ -174,6 +174,35 @@ class Isletme(models.Model):
         verbose_name        = 'İşletme'
         verbose_name_plural = 'İşletmeler'
         ordering            = ['ciftci', 'ad']
+        indexes             = [
+            models.Index(fields=['ciftci', 'aktif']),
+        ]
+
+
+class ToprakAnaliz(models.Model):
+    isletme      = models.ForeignKey(
+                       Isletme,
+                       related_name='toprak_analizler',
+                       on_delete=models.CASCADE
+                   )
+    tarih        = models.DateField()
+    ph           = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    organik_madde = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Organik Madde (%)')
+    fosfor       = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, verbose_name='Fosfor (kg/da)')
+    potasyum     = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, verbose_name='Potasyum (kg/da)')
+    kalsiyum     = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, verbose_name='Kalsiyum (kg/da)')
+    magnezyum    = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, verbose_name='Magnezyum (kg/da)')
+    tuz          = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Tuz (%)')
+    notlar       = models.TextField(blank=True)
+    olusturma    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = 'Toprak Analizi'
+        verbose_name_plural = 'Toprak Analizleri'
+        ordering            = ['-tarih']
+
+    def __str__(self):
+        return f'{self.isletme.ad} — Toprak Analizi {self.tarih}'
 
 
 class MuhendisIsletme(models.Model):

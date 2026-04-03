@@ -1,5 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
+import { AuthContext } from '../../context/AuthContext'
+
+const URUN_EMOJI = {
+  domates:'🩷', cherry:'🍒', biber:'🫑', patlican:'🍆',
+  salatalik:'🥒', kavun:'🍈', karpuz:'🍉', cilek:'🍓',
+  uzum:'🍇', elma:'🍎', nar:'🍎', zeytin:'🫒',
+  bugday:'🌾', arpa:'🌾', misir:'🌽', aycicek:'🌻',
+  pamuk:'🌱', patates:'🥔', sogan:'🧅', sarimsak:'🧄',
+}
+
+function urunEmoji(urun, cesit) {
+  const ara = (s) => s && URUN_EMOJI[s.toLowerCase().replace(/[çğışöü ]/g, c =>
+    ({ç:'c',ğ:'g',ı:'i',ş:'s',ö:'o',ü:'u',' ':''}[c]||c))]
+  return ara(cesit) || ara(urun) || '🌱'
+}
+
+function gunFarki(tarihStr) {
+  if (!tarihStr) return null
+  const gun = Math.floor((Date.now() - new Date(tarihStr)) / 86400000)
+  return gun >= 0 ? gun : null
+}
 
 const TUR_ETIKET = {
   sera:        'Sera',
@@ -18,31 +40,50 @@ const SERA_TIP = {
 }
 
 export default function Isletmelerim() {
+  const navigate = useNavigate()
+  const { kullanici, yukleniyor: authYukleniyor } = useContext(AuthContext)
   const [isletmeler, setIsletmeler] = useState([])
   const [urunler, setUrunler]       = useState([])
+  const [cesitler, setCesitler]     = useState([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [secili, setSecili]         = useState(null)
+  const [toprakAnalizler, setToprakAnalizler] = useState({})
   const [formAcik, setFormAcik]     = useState(false)
   const [kaydediyor, setKaydediyor] = useState(false)
   const [hata, setHata]             = useState('')
 
   const [form, setForm] = useState({
-    ad: '', tur: 'sera', sera_tip: '', urun: '',
-    alan_dekar: '', ekim_tarihi: '',
+    ad: '', tur: 'sera', sera_tip: '', urun: '', cesit: '',
+    alan_dekar: '', ekim_tarihi: '', enlem: '', boylam: '',
   })
 
   useEffect(() => {
+    if (authYukleniyor) return
+    if (!kullanici || kullanici.rol !== 'ciftci') {
+      navigate('/giris')
+      return
+    }
     Promise.all([
       api.get('/ciftci/isletmelerim/'),
       api.get('/ciftci/urunler/'),
     ]).then(([is, ur]) => {
       setIsletmeler(is.data)
       setUrunler(ur.data)
-    }).catch(console.error)
-      .finally(() => setYukleniyor(false))
-  }, [])
+    }).catch(err => {
+      console.error(err)
+      setHata('Veriler yüklenirken hata oluştu.')
+    }).finally(() => setYukleniyor(false))
+  }, [authYukleniyor, kullanici, navigate])
 
-  const degis = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  const degis = (e) => {
+    const { name, value } = e.target
+    setForm(f => ({ ...f, [name]: value }))
+    if (name === 'urun') {
+      setCesitler([])
+      setForm(f => ({ ...f, urun: value, cesit: '' }))
+      if (value) api.get(`/ciftci/urunler/${value}/cesitler/`).then(r => setCesitler(r.data)).catch(() => {})
+    }
+  }
 
   const kaydet = async (e) => {
     e.preventDefault()
@@ -59,12 +100,16 @@ export default function Isletmelerim() {
         alan_dekar: form.alan_dekar,
         ...(form.tur === 'sera' && form.sera_tip ? { sera_tip: form.sera_tip } : {}),
         ...(form.urun ? { urun: form.urun } : {}),
+        ...(form.cesit ? { cesit: form.cesit } : {}),
         ...(form.ekim_tarihi ? { ekim_tarihi: form.ekim_tarihi } : {}),
+        ...(form.enlem ? { enlem: form.enlem } : {}),
+        ...(form.boylam ? { boylam: form.boylam } : {}),
       }
       const res = await api.post('/ciftci/isletme/ekle/', payload)
       setIsletmeler(prev => [res.data, ...prev])
       setFormAcik(false)
-      setForm({ ad: '', tur: 'sera', sera_tip: '', urun: '', alan_dekar: '', ekim_tarihi: '' })
+      setForm({ ad: '', tur: 'sera', sera_tip: '', urun: '', cesit: '', alan_dekar: '', ekim_tarihi: '', enlem: '', boylam: '' })
+      setCesitler([])
     } catch (err) {
       setHata(err.response?.data ? JSON.stringify(err.response.data) : 'Kayıt başarısız.')
     } finally {
@@ -72,7 +117,9 @@ export default function Isletmelerim() {
     }
   }
 
-  if (yukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
+  if (authYukleniyor || yukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
+
+  if (hata) return <div style={s.hataMsg}>{hata}</div>
 
   return (
     <div style={s.kapsayici}>
@@ -126,8 +173,29 @@ export default function Isletmelerim() {
                 </select>
               </div>
               <div style={s.alan}>
+                <label style={s.etiket}>Ürün Çeşidi</label>
+                <select style={s.girdi} name="cesit" value={form.cesit} onChange={degis} disabled={!form.urun || cesitler.length === 0}>
+                  <option value="">{cesitler.length === 0 ? '— önce ürün seçin —' : '— Seçin —'}</option>
+                  {cesitler.map(c => <option key={c.id} value={c.id}>{c.ad}</option>)}
+                </select>
+              </div>
+              <div style={s.alan}>
                 <label style={s.etiket}>Ekim Tarihi</label>
                 <input style={s.girdi} name="ekim_tarihi" type="date" value={form.ekim_tarihi} onChange={degis} />
+              </div>
+              <div style={{...s.alan, gridColumn:'span 2'}}>
+                <label style={s.etiket}>GPS Konumu</label>
+                <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+                  <input style={{...s.girdi, flex:1}} name="enlem" type="number" step="0.000001" placeholder="Enlem (36.123456)" value={form.enlem} onChange={degis} />
+                  <input style={{...s.girdi, flex:1}} name="boylam" type="number" step="0.000001" placeholder="Boylam (30.123456)" value={form.boylam} onChange={degis} />
+                  <button type="button" style={s.konumBtn} onClick={() => {
+                    if (!navigator.geolocation) return
+                    navigator.geolocation.getCurrentPosition(
+                      pos => setForm(f => ({ ...f, enlem: pos.coords.latitude.toFixed(6), boylam: pos.coords.longitude.toFixed(6) })),
+                      () => alert('Konum alınamadı.')
+                    )
+                  }}>📍 Konumumu Al</button>
+                </div>
               </div>
             </div>
             {hata && <p style={s.hataMsg}>{hata}</p>}
@@ -149,16 +217,26 @@ export default function Isletmelerim() {
             <div
               key={i.id}
               style={{...s.kart, ...(secili?.id === i.id ? s.kartSecili : {})}}
-              onClick={() => setSecili(secili?.id === i.id ? null : i)}
+              onClick={() => {
+                const yeni = secili?.id === i.id ? null : i
+                setSecili(yeni)
+                if (yeni && !toprakAnalizler[i.id]) {
+                  api.get(`/ciftci/isletme/${i.id}/toprak-analiz/`)
+                    .then(r => setToprakAnalizler(prev => ({ ...prev, [i.id]: r.data })))
+                    .catch(() => setToprakAnalizler(prev => ({ ...prev, [i.id]: [] })))
+                }
+              }}
             >
               <div style={s.kartUst}>
-                <div>
-                  <p style={s.isletmeAd}>{i.ad}</p>
-                  <p style={s.alt}>
-                    {TUR_ETIKET[i.tur]} · {i.alan_dekar} da
-                    {i.urun_ad ? ` · ${i.urun_ad}` : ''}
-                  </p>
-                </div>
+                <p style={s.isletmeBaslik}>
+                  {urunEmoji(i.urun_ad, i.cesit_ad)}{' '}
+                  [ 🏢 {i.ad} ]
+                  {'  -----  '}
+                  🌱 {i.urun_ad || '—'}{i.cesit_ad ? ` - ${i.cesit_ad}` : ''}
+                  {i.alan_dekar ? `  📏 ${i.alan_dekar} da` : ''}
+                  {gunFarki(i.ekim_tarihi) !== null && `  ⏳ ${gunFarki(i.ekim_tarihi)} günlük`}
+                  {i.enlem && i.boylam && <>{' '}<a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 GPS</a></>}
+                </p>
                 <span style={i.aktif ? s.aktifBadge : s.pasifBadge}>
                   {i.aktif ? 'Aktif' : 'Pasif'}
                 </span>
@@ -182,6 +260,28 @@ export default function Isletmelerim() {
                     <span style={s.detiket}>Oluşturma</span>
                     <span>{new Date(i.olusturma).toLocaleDateString('tr-TR')}</span>
                   </div>
+
+                  {/* Toprak Analiz */}
+                  {toprakAnalizler[i.id] === undefined
+                    ? <p style={s.analizYukleniyor}>Toprak analizi yükleniyor…</p>
+                    : toprakAnalizler[i.id].length === 0
+                      ? <p style={s.analizYok}>🧪 Toprak analizi henüz girilmemiş.</p>
+                      : toprakAnalizler[i.id].slice(0, 1).map(a => (
+                          <div key={a.id} style={s.analizKart}>
+                            <p style={s.analizBaslik}>🧪 Toprak Analizi — {a.tarih}</p>
+                            <div style={s.analizGrid}>
+                              {a.ph        != null && <span>pH: <b>{a.ph}</b></span>}
+                              {a.organik_madde != null && <span>Org. Madde: <b>{a.organik_madde}%</b></span>}
+                              {a.fosfor    != null && <span>Fosfor: <b>{a.fosfor} kg/da</b></span>}
+                              {a.potasyum  != null && <span>Potasyum: <b>{a.potasyum} kg/da</b></span>}
+                              {a.kalsiyum  != null && <span>Kalsiyum: <b>{a.kalsiyum} kg/da</b></span>}
+                              {a.magnezyum != null && <span>Magnezyum: <b>{a.magnezyum} kg/da</b></span>}
+                              {a.tuz       != null && <span>Tuz: <b>{a.tuz}%</b></span>}
+                            </div>
+                            {a.notlar && <p style={s.analizNot}>{a.notlar}</p>}
+                          </div>
+                        ))
+                  }
                 </div>
               )}
             </div>
@@ -212,14 +312,21 @@ const s = {
   formAlt:   { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '14px' },
   iptalBtn:  { padding: '7px 14px', background: '#f0f0f0', color: '#444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' },
   kaydetBtn: { padding: '7px 18px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' },
-  kart:       { background: '#fff', border: '1px solid #e8e8e8', borderRadius: '10px', padding: '1rem 1.25rem', cursor: 'pointer' },
-  kartSecili: { border: '1px solid #1a7a4a' },
-  kartUst:    { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  isletmeAd:  { margin: 0, fontWeight: '500', fontSize: '1rem' },
-  alt:        { margin: '4px 0 0', fontSize: '0.83rem', color: '#888' },
+  kart:          { background: '#fff', border: '1px solid #e8e8e8', borderRadius: '10px', padding: '1rem 1.25rem', cursor: 'pointer' },
+  kartSecili:    { border: '1px solid #1a7a4a' },
+  kartUst:       { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' },
+  isletmeBaslik: { margin: 0, fontSize: '0.9rem', lineHeight: '1.6', color: '#333', flex: 1 },
+  gpsLink:       { color: '#1a7a4a', textDecoration: 'none', fontWeight: '500' },
   aktifBadge: { padding: '3px 10px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '500', background: '#e8f5ee', color: '#1a7a4a' },
   pasifBadge: { padding: '3px 10px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '500', background: '#f5f5f5', color: '#aaa' },
   detay:     { marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f0f0f0' },
   detayRow:  { display: 'flex', gap: '12px', padding: '4px 0', fontSize: '0.9rem' },
   detiket:   { color: '#888', minWidth: '120px' },
+  konumBtn:  { padding: '7px 12px', background: '#e8f5ee', color: '#1a7a4a', border: '1px solid #c8e6d4', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' },
+  analizKart:       { marginTop: '12px', padding: '10px 12px', background: '#f8fdf9', border: '1px solid #d0eada', borderRadius: '8px' },
+  analizBaslik:     { margin: '0 0 8px', fontWeight: '600', fontSize: '0.85rem', color: '#1a7a4a' },
+  analizGrid:       { display: 'flex', flexWrap: 'wrap', gap: '8px 20px', fontSize: '0.83rem', color: '#444' },
+  analizNot:        { margin: '8px 0 0', fontSize: '0.82rem', color: '#666' },
+  analizYukleniyor: { fontSize: '0.83rem', color: '#aaa', marginTop: '10px' },
+  analizYok:        { fontSize: '0.83rem', color: '#aaa', marginTop: '10px' },
 }

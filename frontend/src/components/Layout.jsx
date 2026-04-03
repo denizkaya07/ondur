@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext'
+import PropTypes from 'prop-types'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 const menuler = {
@@ -61,6 +62,10 @@ export default function Layout({ children }) {
       </main>
     </div>
   )
+}
+
+Layout.propTypes = {
+  children: PropTypes.node.isRequired,
 }
 
 const s = {

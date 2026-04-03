@@ -1,4 +1,6 @@
+/* eslint react/prop-types: 0 */
 import { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import api from '../../services/api'
 
 const KATEGORI = ['fungisit','insektisit','herbisit','akarisit','nematisit','rodentisit','mollusisit','diger']
@@ -76,6 +78,27 @@ function UrunKart({ urun, tip, secili, onClick, onDuzenle }) {
   )
 }
 
+UrunKart.propTypes = {
+  urun: PropTypes.shape({
+    ticari_ad: PropTypes.string,
+    kategori: PropTypes.string,
+    formulasyon: PropTypes.string,
+    doz_min: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    doz_max: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    doz_birimi: PropTypes.string,
+    uygulama_yontemi: PropTypes.string,
+    ambalaj_hacmi: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    ambalaj_birimi: PropTypes.string,
+    ambalaj_birim: PropTypes.string,
+    onaylandi: PropTypes.bool,
+    etken_maddeler: PropTypes.array,
+  }),
+  tip: PropTypes.string.isRequired,
+  secili: PropTypes.bool,
+  onClick: PropTypes.func.isRequired,
+  onDuzenle: PropTypes.func.isRequired,
+}
+
 function Satir({ etiket, deger }) {
   return (
     <div style={s.satirRow}>
@@ -83,6 +106,11 @@ function Satir({ etiket, deger }) {
       <span>{deger}</span>
     </div>
   )
+}
+
+Satir.propTypes = {
+  etiket: PropTypes.string.isRequired,
+  deger: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 }
 
 function UrunForm({ tip, mevcut, onKapat, onKaydet }) {

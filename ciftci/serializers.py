@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Ciftci, Isletme, Urun, UrunCesit, MuhendisIsletme
+from .models import Ciftci, Isletme, Urun, UrunCesit, MuhendisIsletme, ToprakAnaliz
 
 
 class UrunSerializer(serializers.ModelSerializer):
@@ -56,21 +56,48 @@ class MuhendisIsletmeSerializer(serializers.ModelSerializer):
     isletme     = IsletmeSerializer(read_only=True)
     muhendis_ad = serializers.SerializerMethodField()
     ciftci_ad   = serializers.SerializerMethodField()
+    ciftci_soyad = serializers.SerializerMethodField()
+    ciftci_mahalle = serializers.SerializerMethodField()
     ciftci_ilce = serializers.SerializerMethodField()
+    ciftci_il = serializers.SerializerMethodField()
+    ciftci_cks_no = serializers.SerializerMethodField()
+    ciftci_telefon = serializers.SerializerMethodField()
 
     def get_muhendis_ad(self, obj):
         return obj.muhendis.get_full_name() or obj.muhendis.username
 
     def get_ciftci_ad(self, obj):
-        c = obj.isletme.ciftci
-        return f'{c.ad} {c.soyad}'
+        return obj.isletme.ciftci.ad
+
+    def get_ciftci_soyad(self, obj):
+        return obj.isletme.ciftci.soyad
+
+    def get_ciftci_mahalle(self, obj):
+        return obj.isletme.ciftci.mahalle
 
     def get_ciftci_ilce(self, obj):
-        return obj.isletme.ciftci.ilce or ''
+        return obj.isletme.ciftci.ilce
+
+    def get_ciftci_il(self, obj):
+        return obj.isletme.ciftci.il
+
+    def get_ciftci_cks_no(self, obj):
+        return obj.isletme.ciftci.cks_no
+
+    def get_ciftci_telefon(self, obj):
+        return obj.isletme.ciftci.telefon
 
     class Meta:
         model  = MuhendisIsletme
-        fields = ['id', 'isletme', 'muhendis_ad', 'ciftci_ad', 'ciftci_ilce', 'durum', 'talep_tarihi', 'yanit_tarihi']
+        fields = ['id', 'isletme', 'muhendis_ad', 'ciftci_ad', 'ciftci_soyad', 'ciftci_mahalle', 'ciftci_ilce', 'ciftci_il', 'ciftci_cks_no', 'ciftci_telefon', 'durum', 'talep_tarihi', 'yanit_tarihi']
+
+class ToprakAnalizSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = ToprakAnaliz
+        fields = ['id', 'tarih', 'ph', 'organik_madde', 'fosfor', 'potasyum',
+                  'kalsiyum', 'magnezyum', 'tuz', 'notlar', 'olusturma']
+        read_only_fields = ['olusturma']
+
 
 from .models import CiftciBayii
 

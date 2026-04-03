@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+/* eslint react/prop-types: 0 */
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 function urunEmoji(urunAd, cesitAd) {
@@ -64,6 +65,18 @@ function Bolum({ ikon, baslik, acik, onToggle, onEkle, ekleEtiket, children }) {
 
 // ─── 💧 Sulama satırı ───
 function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
+  const [turFiltre, setTurFiltre] = useState('')
+
+  // Katalogdan benzersiz türleri çıkar
+  const turler = [...new Set(Object.values(katalogIndex).map(u => u._tip === 'ilac' ? `İlaç: ${u._turEtiket}` : `Gübre: ${u._turEtiket}`))].sort()
+
+  const filtreliAnahtar = Object.keys(katalogIndex).filter(k => {
+    if (!turFiltre) return true
+    const u = katalogIndex[k]
+    const etiket = u._tip === 'ilac' ? `İlaç: ${u._turEtiket}` : `Gübre: ${u._turEtiket}`
+    return etiket === turFiltre
+  })
+
   const autofill = (ad) => {
     const urun = katalogIndex[ad]
     if (!urun) return
@@ -89,8 +102,22 @@ function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
     onChange(yeni)
   }
 
+  const etkenMadde = satir.urun_ad && katalogIndex[satir.urun_ad]
+    ? (katalogIndex[satir.urun_ad].etken_maddeler || []).map(e => e.etken_madde_ad).filter(Boolean).join(', ')
+    : ''
+
   return (
     <tr>
+      <td style={s.td}>
+        <select
+          style={{...s.tdGirdi, width:'130px', fontSize:'11px', color: turFiltre ? '#1a7a4a' : '#aaa'}}
+          value={turFiltre}
+          onChange={e => { setTurFiltre(e.target.value); onChange({ ...satir, urun_ad: '', urun_id: '', urun_tip: '', tur: '' }) }}
+        >
+          <option value="">— Tür —</option>
+          {turler.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </td>
       <td style={s.td}>
         <input
           list={`dl-${satir._id}`}
@@ -103,12 +130,12 @@ function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
           }}
         />
         <datalist id={`dl-${satir._id}`}>
-          {Object.keys(katalogIndex).map(k => <option key={k} value={k} />)}
+          {filtreliAnahtar.map(k => <option key={k} value={k} />)}
         </datalist>
       </td>
       <td style={s.td}>
-        <input style={{...s.tdGirdi, color:'#888', background:'#fafafa'}}
-          value={satir.tur} readOnly placeholder="—" />
+        <input style={{...s.tdGirdi, color:'#666', background:'#fafafa', minWidth:'100px'}}
+          value={etkenMadde} readOnly placeholder="—" />
       </td>
       <td style={s.td}>
         <input style={{...s.tdGirdi, width:'60px'}} type="number" placeholder="—"
@@ -122,7 +149,8 @@ function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
       </td>
       <td style={s.td}>
         <select style={{...s.tdGirdi, width:'110px', fontSize:'11px', color:'#888'}}
-          value={satir.baz} onChange={e => guncelle('baz', e.target.value)}>
+          value={satir.baz} onChange={e => guncelle('baz', e.target.value)}
+          title="Toplam hesap bazı: 100 L suya → her 100 litre suya bu kadar ürün. Dekar → doğrudan dekara göre.">
           <option value="100L">/ 100 L suya</option>
           <option value="1000L">/ ton suya</option>
           <option value="dekar">/ dekar</option>
@@ -139,6 +167,12 @@ function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
           <option>Yapraktan</option><option>Damla</option>
           <option>Sulama Suyu</option><option>Toprak</option>
         </select>
+      </td>
+      <td style={s.td}>
+        <input style={{...s.tdGirdi, minWidth:'100px'}}
+          placeholder="Not…"
+          value={satir.not || ''}
+          onChange={e => guncelle('not', e.target.value)} />
       </td>
       <td style={s.td}>
         <button style={s.silBtn} onClick={onSil}>✕</button>
@@ -164,6 +198,20 @@ function SulamaBolum({ donemler, setDonemler, katalogIndex, alanDekar }) {
 
   const donemSil = (id) =>
     setDonemler(prev => prev.filter(d => d._id !== id))
+
+  const donemKopyala = (donem) => {
+    setDonemler(prev => {
+      const idx = prev.findIndex(d => d._id === donem._id)
+      const kopya = {
+        _id: uid(),
+        tarih: donem.tarih,
+        satirlar: donem.satirlar.map(s => ({ ...s, _id: uid() })),
+      }
+      const yeni = [...prev]
+      yeni.splice(idx + 1, 0, kopya)
+      return yeni
+    })
+  }
 
   const satirEkle = (donemId) => {
     setDonemler(prev => prev.map(d => d._id === donemId
@@ -192,7 +240,7 @@ function SulamaBolum({ donemler, setDonemler, katalogIndex, alanDekar }) {
       onEkle={donemEkle} ekleEtiket="Su Ekle">
 
       {donemler.length === 0 && (
-        <p style={s.bosMetin}>Henüz dönem yok — "+ Dönem Ekle" ile başla.</p>
+        <p style={s.bosMetin}>Henüz dönem yok — + Dönem Ekle ile başla.</p>
       )}
 
       {donemler.map((d, i) => (
@@ -203,7 +251,10 @@ function SulamaBolum({ donemler, setDonemler, katalogIndex, alanDekar }) {
               placeholder="Uygulama tarihi"
               onChange={e => donemGuncelle(d._id, { ...d, tarih: e.target.value })} />
             {donemler.length > 1 && (
-              <button style={s.silBtn} onClick={() => donemSil(d._id)}>✕ Sil</button>
+              <>
+                <button style={s.kopyalaBtn} onClick={() => donemKopyala(d)}>⧉ Kopyala</button>
+                <button style={s.silBtn} onClick={() => donemSil(d._id)}>✕ Sil</button>
+              </>
             )}
           </div>
 
@@ -211,7 +262,7 @@ function SulamaBolum({ donemler, setDonemler, katalogIndex, alanDekar }) {
             <table style={s.tablo}>
               <thead>
                 <tr>
-                  {['İlaç / Gübre','Tür','Doz','Birim','Baz','İşletme Toplam','Uygulama',''].map(h => (
+                  {['Tür','İlaç / Gübre','Etken Madde','Doz','Birim','Baz','İşletme Toplam','Uygulama','Not',''].map(h => (
                     <th key={h} style={s.th}>{h}</th>
                   ))}
                 </tr>
@@ -251,7 +302,7 @@ function KulturelBolum({ items, setItems }) {
       onEkle={ekle} ekleEtiket="Önlem Ekle">
 
       {items.length === 0 && (
-        <p style={s.bosMetin}>Budama, havalandırma, sulama sıklığı vb. — "+ Önlem Ekle" ile başla.</p>
+        <p style={s.bosMetin}>Budama, havalandırma, sulama sıklığı vb. — + Önlem Ekle ile başla.</p>
       )}
 
       <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
@@ -283,7 +334,7 @@ function BiyolojikBolum({ items, setItems }) {
       onEkle={ekle} ekleEtiket="Ajan Ekle">
 
       {items.length === 0 && (
-        <p style={s.bosMetin}>Faydalı böcek, tuzak, feromon vb. — "+ Ajan Ekle" ile başla.</p>
+        <p style={s.bosMetin}>Faydalı böcek, tuzak, feromon vb. — + Ajan Ekle ile başla.</p>
       )}
 
       <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
@@ -333,7 +384,7 @@ function TakipBolum({ items, setItems }) {
       onEkle={ekle} ekleEtiket="Takip Ekle">
 
       {items.length === 0 && (
-        <p style={s.bosMetin}>Kontrol tarihleri ve yapılacaklar — "+ Takip Ekle" ile başla.</p>
+        <p style={s.bosMetin}>Kontrol tarihleri ve yapılacaklar — + Takip Ekle ile başla.</p>
       )}
 
       <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
@@ -361,22 +412,48 @@ export default function ReceteYaz() {
   const [katalogIndex, setKatalogIndex] = useState({})  // { ticari_ad: {...urun} }
   const [kaydediyor,  setKaydediyor]  = useState(false)
   const [hata,        setHata]        = useState('')
+  const [hataliAlanlar, setHataliAlanlar] = useState({})
+  const autoSaveRef = useRef(null)
 
-  // Temel form — isletme URL param'dan ön doldurulur
-  const [form, setForm] = useState({
-    isletme: searchParams.get('isletme') || '', tani: '', tarih: new Date().toISOString().slice(0,10),
-    durum: 'taslak', ciftciye_not: '',
+  const isletmeParam = searchParams.get('isletme') || ''
+  const LS_KEY = `recete_taslak_${isletmeParam}`
+
+  // Temel form — localStorage'dan geri yükle yoksa varsayılan
+  const [form, setForm] = useState(() => {
+    try {
+      const kayitli = JSON.parse(localStorage.getItem(LS_KEY) || '{}')
+      return {
+        isletme: isletmeParam,
+        tani: kayitli.tani || '',
+        tarih: kayitli.tarih || new Date().toISOString().slice(0,10),
+        durum: kayitli.durum || 'taslak',
+        ciftciye_not: kayitli.ciftciye_not || '',
+      }
+    } catch { return { isletme: isletmeParam, tani: '', tarih: new Date().toISOString().slice(0,10), durum: 'taslak', ciftciye_not: '' } }
   })
 
-  // Bölümler
-  const [donemler,   setDonemler]  = useState([])
-  const [kulturel,   setKulturel]  = useState([])
-  const [biyolojik,  setBiyolojik] = useState([])
-  const [takip,      setTakip]     = useState([])
+  // Bölümler — localStorage'dan geri yükle
+  const [donemler,   setDonemler]  = useState(() => { try { return JSON.parse(localStorage.getItem(LS_KEY+'_donem') || 'null') || [] } catch { return [] } })
+  const [kulturel,   setKulturel]  = useState(() => { try { return JSON.parse(localStorage.getItem(LS_KEY+'_kultur') || '[]') } catch { return [] } })
+  const [biyolojik,  setBiyolojik] = useState(() => { try { return JSON.parse(localStorage.getItem(LS_KEY+'_biyo') || '[]') } catch { return [] } })
+  const [takip,      setTakip]     = useState(() => { try { return JSON.parse(localStorage.getItem(LS_KEY+'_takip') || '[]') } catch { return [] } })
 
   // Seçili işletmenin alan_dekar değeri
   const seciliIsletme = isletmeler.find(d => String(d.isletme.id) === String(form.isletme))
   const alanDekar = parseFloat(seciliIsletme?.isletme?.alan_dekar) || 0
+
+  // Auto-save — her değişiklikte 1.5sn debounce ile localStorage'a yaz
+  useEffect(() => {
+    clearTimeout(autoSaveRef.current)
+    autoSaveRef.current = setTimeout(() => {
+      localStorage.setItem(LS_KEY, JSON.stringify(form))
+      localStorage.setItem(LS_KEY+'_donem', JSON.stringify(donemler))
+      localStorage.setItem(LS_KEY+'_kultur', JSON.stringify(kulturel))
+      localStorage.setItem(LS_KEY+'_biyo', JSON.stringify(biyolojik))
+      localStorage.setItem(LS_KEY+'_takip', JSON.stringify(takip))
+    }, 1500)
+    return () => clearTimeout(autoSaveRef.current)
+  }, [form, donemler, kulturel, biyolojik, takip, LS_KEY])
 
   useEffect(() => {
     api.get('/ciftci/danisanlarim/').then(r => setIsletmeler(r.data)).catch(() => {})
@@ -401,8 +478,8 @@ export default function ReceteYaz() {
       setKatalogIndex(index)
     }).catch(() => {})
 
-    // Başlangıçta bir dönem aç
-    setDonemler([{
+    // Dönem yoksa başlangıç dönemi oluştur
+    setDonemler(prev => prev.length > 0 ? prev : [{
       _id: uid(), tarih: new Date().toISOString().slice(0,10),
       satirlar: [{ _id: uid(), urun_ad:'', urun_id:'', urun_tip:'', tur:'', doz:'', birim:'ml', baz:'100L', toplam:'', yontem:'Yapraktan' }]
     }])
@@ -411,10 +488,15 @@ export default function ReceteYaz() {
   const degis = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
 
   const kaydet = async () => {
-    if (!form.isletme || !form.tani || !form.tarih) {
-      setHata('İşletme, tanı ve tarih zorunludur.')
+    const hatalar = {}
+    if (!form.isletme) hatalar.isletme = true
+    if (!form.tarih)   hatalar.tarih   = true
+    if (Object.keys(hatalar).length) {
+      setHataliAlanlar(hatalar)
+      setHata('Kırmızı alanları doldurun.')
       return
     }
+    setHataliAlanlar({})
     setHata('')
     setKaydediyor(true)
     try {
@@ -482,6 +564,11 @@ export default function ReceteYaz() {
         })
       }
 
+      localStorage.removeItem(LS_KEY)
+      localStorage.removeItem(LS_KEY+'_donem')
+      localStorage.removeItem(LS_KEY+'_kultur')
+      localStorage.removeItem(LS_KEY+'_biyo')
+      localStorage.removeItem(LS_KEY+'_takip')
       navigate('/muhendis/receteler')
     } catch (err) {
       setHata(err.response?.data ? JSON.stringify(err.response.data) : 'Kayıt başarısız.')
@@ -510,21 +597,21 @@ export default function ReceteYaz() {
             {searchParams.get('isletme') ? (
               (() => {
                 const isl = seciliIsletme?.isletme
-                const urun = isl?.cesit_ad || isl?.urun_ad || ''
                 const emoji = urunEmoji(isl?.urun_ad, isl?.cesit_ad)
                 const dikimGun = isl?.ekim_tarihi
                   ? Math.floor((Date.now() - new Date(isl.ekim_tarihi)) / 86400000)
                   : null
                 return (
                   <div style={s.isletmeKart}>
-                    <div style={s.isletmeEmoji}>{emoji}</div>
-                    <div style={s.isletmeBilgi}>
-                      <p style={s.isletmeAd}>{isl?.ad || '—'}</p>
-                      <p style={s.isletmeAlt}>
-                        {urun}{isl?.alan_dekar ? ` · ${isl.alan_dekar} da` : ''}
-                        {dikimGun !== null ? ` · Dikimden ${dikimGun}. gün` : ''}
-                      </p>
-                    </div>
+                    <p style={s.isletmeBaslikMetin}>
+                      {emoji}{' '}
+                      [ 🏢 {isl?.ad || '—'} ] 👨‍🌾 {seciliIsletme?.ciftci_ad} {seciliIsletme?.ciftci_soyad}
+                      {'  -----  '}
+                      🌱 {isl?.urun_ad || '—'}{isl?.cesit_ad ? ` - ${isl.cesit_ad}` : ''}
+                      {isl?.alan_dekar ? `  📏 ${isl.alan_dekar} da` : ''}
+                      {dikimGun !== null ? `  ⏳ ${dikimGun} günlük` : ''}
+                      {isl?.enlem && isl?.boylam && <>{' '}<a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" style={{color:'#1a7a4a'}}>📍 GPS</a></>}
+                    </p>
                   </div>
                 )
               })()
@@ -543,7 +630,8 @@ export default function ReceteYaz() {
 
           <div style={s.alan}>
             <label style={s.etiket}>Tarih *</label>
-            <input type="date" name="tarih" value={form.tarih} onChange={degis} style={s.girdi} />
+            <input type="date" name="tarih" value={form.tarih} onChange={degis}
+              style={{...s.girdi, ...(hataliAlanlar.tarih ? s.hataliGirdi : {})}} />
           </div>
 
           <div style={s.alan}>
@@ -555,7 +643,7 @@ export default function ReceteYaz() {
           </div>
 
           <div style={{...s.alan, gridColumn:'span 3'}}>
-            <label style={s.etiket}>Tanı / Problem *</label>
+            <label style={s.etiket}>Tanı / Problem</label>
             <input name="tani" value={form.tani} onChange={degis} style={s.girdi}
               placeholder="Örn: Külleme hastalığı, kırmızı örümcek, demir eksikliği…" />
           </div>
@@ -613,9 +701,12 @@ const s = {
   temelGrid: { display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px' },
   alan:      { display:'flex', flexDirection:'column', gap:'4px' },
   etiket:    { fontSize:'0.8rem', color:'#666', fontWeight:'500' },
-  girdi:     { padding:'7px 10px', border:'1px solid #ddd', borderRadius:'7px', fontSize:'0.88rem', outline:'none', width:'100%', boxSizing:'border-box', fontFamily:'inherit' },
+  girdi:      { padding:'7px 10px', border:'1px solid #ddd', borderRadius:'7px', fontSize:'0.88rem', outline:'none', width:'100%', boxSizing:'border-box', fontFamily:'inherit' },
+  hataliGirdi:{ border:'2px solid #e53e3e', background:'#fff5f5' },
+  kopyalaBtn: { padding:'3px 10px', background:'#f0f4ff', color:'#3b5bdb', border:'1px solid #c5d0fa', borderRadius:'5px', cursor:'pointer', fontSize:'0.78rem' },
   sabitIsletme: { padding:'7px 10px', border:'1px solid #e0ede6', borderRadius:'7px', fontSize:'0.88rem', background:'#f8fdf9', color:'#1a7a4a', fontWeight:'500' },
-  isletmeKart:  { display:'flex', alignItems:'center', gap:'12px', padding:'10px 14px', background:'#f8fdf9', border:'1px solid #d0eada', borderRadius:'10px' },
+  isletmeKart:  { padding:'10px 14px', background:'#f8fdf9', border:'1px solid #d0eada', borderRadius:'10px' },
+  isletmeBaslikMetin: { margin:0, fontSize:'0.9rem', lineHeight:'1.6', color:'#333' },
   isletmeEmoji: { fontSize:'2.2rem', width:'48px', height:'48px', display:'flex', alignItems:'center', justifyContent:'center', background:'#fff', borderRadius:'10px', border:'1px solid #eee', flexShrink:0 },
   isletmeBilgi: { flex:1 },
   isletmeAd:    { margin:0, fontWeight:'600', fontSize:'1rem', color:'#1a1a1a' },
