@@ -103,7 +103,28 @@ export default function Receteler() {
                           ? <p style={s.yukleniyor}>Yükleniyor…</p>
                           : detaylar[r.id] === null
                             ? <p style={s.hata}>Yüklenemedi.</p>
-                            : <UrunTablosu detay={detaylar[r.id]} />
+                            : <>
+                                <UrunTablosu detay={detaylar[r.id]} />
+                                {detaylar[r.id] && (() => {
+                                  const tel = detaylar[r.id].ciftci_telefon?.replace(/\D/g,'')
+                                  const mesaj = encodeURIComponent(receteMesajOlustur(detaylar[r.id]))
+                                  return (
+                                    <div style={s.paylasBar}>
+                                      <button style={s.pdfBtn} onClick={() => recetePdfIndir(detaylar[r.id])}>
+                                        📄 PDF İndir
+                                      </button>
+                                      {tel && <>
+                                        <a style={s.waBtn} href={`https://wa.me/90${tel.replace(/^0/,'')}?text=${mesaj}`} target="_blank" rel="noreferrer">
+                                          📲 WhatsApp
+                                        </a>
+                                        <a style={s.smsBtn} href={`sms:${tel}?body=${mesaj}`}>
+                                          💬 SMS
+                                        </a>
+                                      </>}
+                                    </div>
+                                  )
+                                })()}
+                              </>
                         }
                       </td>
                     </tr>
@@ -116,6 +137,100 @@ export default function Receteler() {
       )}
     </div>
   )
+}
+
+function recetePdfIndir(detay) {
+  const adimlar = detay.adimlar || []
+  const sulamaHtml = adimlar.filter(a => a.notlar?.includes('[sulama]')).map((a, i) => {
+    const kalemler = (a.kalemler || []).map(k => `
+      <tr>
+        <td>${k.ilac_ad || k.gubre_ad || '—'}</td>
+        <td>${k.doz_dekar}</td>
+        <td>${k.birim}</td>
+        <td>${k.toplam_miktar || '—'}</td>
+      </tr>`).join('')
+    return `
+      <h4 style="color:#1a7a4a;margin:16px 0 6px">💧 ${i+1}. Sulama${a.uygulama_tarihi ? ' — ' + a.uygulama_tarihi : ''}</h4>
+      <table><thead><tr><th>İlaç / Gübre</th><th>Doz/da</th><th>Birim</th><th>Toplam</th></tr></thead>
+      <tbody>${kalemler}</tbody></table>`
+  }).join('')
+
+  const kulturelHtml = adimlar.filter(a => a.notlar?.includes('[kültürel]'))
+    .map(a => `<li>🌿 ${a.tanim}</li>`).join('')
+  const biyoHtml = adimlar.filter(a => a.notlar?.includes('[biyolojik]'))
+    .map(a => `<li>🐞 ${a.tanim}</li>`).join('')
+  const takipHtml = adimlar.filter(a => a.notlar?.includes('[takip]'))
+    .map(a => `<li>📋 ${a.uygulama_tarihi ? a.uygulama_tarihi + ' — ' : ''}${a.tanim}</li>`).join('')
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Reçete #${detay.id} — ${detay.isletme_ad}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; padding: 32px; color: #222; max-width: 860px; margin: auto; }
+  h1 { color: #1a7a4a; font-size: 1.4rem; margin: 0 0 4px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 20px; color: #555; font-size: 0.88rem; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #1a7a4a; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; background: ${detay.durum === 'onaylandi' ? '#e8f5ee' : '#fff8e1'}; color: ${detay.durum === 'onaylandi' ? '#1a7a4a' : '#b7791f'}; }
+  .tani { background: #f8fdf9; border-left: 4px solid #1a7a4a; padding: 10px 14px; margin-bottom: 16px; font-size: 0.95rem; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  th { background: #e8f5ee; color: #1a7a4a; padding: 7px 10px; text-align: left; font-size: 0.83rem; }
+  td { padding: 7px 10px; border-bottom: 1px solid #eee; font-size: 0.88rem; }
+  ul { margin: 6px 0; padding-left: 18px; font-size: 0.88rem; line-height: 1.8; }
+  .not { margin-top: 16px; padding: 10px 14px; background: #fff8e1; border-radius: 6px; font-size: 0.88rem; }
+  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #eee; font-size: 0.78rem; color: #aaa; }
+  @media print { button { display:none!important; } body { padding: 16px; } }
+</style></head><body>
+<h1>🌱 Ondur Reçete #${detay.id}</h1>
+<div class="meta">
+  <span>📅 ${detay.tarih}</span>
+  <span>🏢 ${detay.isletme_ad}</span>
+  <span>👨‍🌾 ${detay.ciftci_ad || ''} ${detay.ciftci_soyad || ''}</span>
+  ${detay.ciftci_telefon ? `<span>📞 ${detay.ciftci_telefon}</span>` : ''}
+  <span>👷 ${detay.muhendis_ad || ''}</span>
+  <span class="badge">${detay.durum === 'onaylandi' ? 'Onaylandı' : 'Taslak'}</span>
+</div>
+${detay.tani ? `<div class="tani">🔍 <b>Tanı / Problem:</b> ${detay.tani}</div>` : ''}
+${sulamaHtml}
+${kulturelHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">🌿 Kültürel Önlemler</h4><ul>${kulturelHtml}</ul>` : ''}
+${biyoHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">🐞 Biyolojik Mücadele</h4><ul>${biyoHtml}</ul>` : ''}
+${takipHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">📋 Takip Noktaları</h4><ul>${takipHtml}</ul>` : ''}
+${detay.ciftciye_not ? `<div class="not">📝 <b>Çiftçiye Not:</b> ${detay.ciftciye_not}</div>` : ''}
+<div class="footer">Ondur Tarım Danışmanlık · ondur.com.tr</div>
+<br><button onclick="window.print()" style="padding:9px 20px;background:#1a7a4a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem">🖨️ PDF İndir / Yazdır</button>
+</body></html>`
+
+  const w = window.open('', '_blank')
+  w.document.write(html)
+  w.document.close()
+}
+
+function receteMesajOlustur(detay) {
+  const satirlar = []
+  satirlar.push(`🌱 ONDUR REÇETE #${detay.id}`)
+  satirlar.push(`📅 ${detay.tarih}`)
+  satirlar.push(`🏢 ${detay.isletme_ad}`)
+  if (detay.tani) satirlar.push(`🔍 Tanı: ${detay.tani}`)
+  satirlar.push('')
+
+  for (const adim of detay.adimlar || []) {
+    if (adim.notlar?.includes('[sulama]') && adim.kalemler?.length) {
+      satirlar.push(`💧 ${adim.tanim}${adim.uygulama_tarihi ? ' — ' + adim.uygulama_tarihi : ''}`)
+      for (const k of adim.kalemler) {
+        satirlar.push(`  • ${k.ilac_ad || k.gubre_ad} — ${k.doz_dekar} ${k.birim}/da`)
+      }
+    } else if (adim.notlar?.includes('[kültürel]')) {
+      satirlar.push(`🌿 ${adim.tanim}`)
+    } else if (adim.notlar?.includes('[biyolojik]')) {
+      satirlar.push(`🐞 ${adim.tanim}`)
+    } else if (adim.notlar?.includes('[takip]')) {
+      satirlar.push(`📋 ${adim.uygulama_tarihi ? adim.uygulama_tarihi + ' — ' : ''}${adim.tanim}`)
+    }
+  }
+
+  if (detay.ciftciye_not) {
+    satirlar.push('')
+    satirlar.push(`📝 Not: ${detay.ciftciye_not}`)
+  }
+  return satirlar.join('\n')
 }
 
 function UrunTablosu({ detay }) {
@@ -207,4 +322,8 @@ const s = {
   hata:      { margin: 0, fontSize: '0.85rem', color: '#e53e3e' },
   ith:       { padding: '6px 12px', textAlign: 'left', color: '#888', fontWeight: '600', borderBottom: '1px solid #e8e8e8' },
   itd:       { padding: '6px 12px', verticalAlign: 'middle' },
+  paylasBar: { display: 'flex', gap: '10px', marginTop: '12px' },
+  pdfBtn:    { padding: '6px 16px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500' },
+  waBtn:     { padding: '6px 16px', background: '#25d366', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: '500' },
+  smsBtn:    { padding: '6px 16px', background: '#f0f0f0', color: '#444', borderRadius: '8px', textDecoration: 'none', fontSize: '0.85rem' },
 }

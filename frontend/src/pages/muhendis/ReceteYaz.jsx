@@ -487,6 +487,59 @@ export default function ReceteYaz() {
 
   const degis = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
 
+  const toprakAnalizPdf = async (isl) => {
+    const isletme = isl.isletme
+    let analizler = []
+    try {
+      const res = await api.get(`/ciftci/isletme/${isletme.id}/toprak-analiz/`)
+      analizler = res.data
+    } catch { /* yok */ }
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Toprak Analizi — ${isletme.ad}</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 32px; color: #222; }
+  h1 { color: #1a7a4a; font-size: 1.4rem; margin-bottom: 4px; }
+  .meta { color: #888; font-size: 0.9rem; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  th { background: #e8f5ee; color: #1a7a4a; padding: 8px 12px; text-align: left; font-size: 0.85rem; }
+  td { padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+  .bos { color: #aaa; font-style: italic; margin-top: 24px; }
+  .notlar { margin-top: 12px; padding: 10px; background: #f9f9f9; border-radius: 6px; font-size: 0.85rem; }
+  @media print { body { padding: 16px; } button { display: none; } }
+</style></head><body>
+<h1>🧪 Toprak Analizi Raporu</h1>
+<div class="meta">
+  🏢 ${isletme.ad} &nbsp;|&nbsp;
+  👨‍🌾 ${isl.ciftci_ad || ''} ${isl.ciftci_soyad || ''} &nbsp;|&nbsp;
+  🌱 ${isletme.urun_ad || '—'}${isletme.cesit_ad ? ' - ' + isletme.cesit_ad : ''} &nbsp;|&nbsp;
+  📏 ${isletme.alan_dekar || '—'} da
+</div>
+${analizler.length === 0
+  ? '<p class="bos">Bu işletme için toprak analizi girilmemiş.</p>'
+  : analizler.map(a => `
+    <h3 style="color:#1a7a4a;font-size:1rem;margin:20px 0 6px">📅 Analiz Tarihi: ${a.tarih}</h3>
+    <table>
+      <tr><th>Parametre</th><th>Değer</th></tr>
+      ${a.ph != null ? `<tr><td>pH</td><td>${a.ph}</td></tr>` : ''}
+      ${a.organik_madde != null ? `<tr><td>Organik Madde</td><td>${a.organik_madde} %</td></tr>` : ''}
+      ${a.fosfor != null ? `<tr><td>Fosfor</td><td>${a.fosfor} kg/da</td></tr>` : ''}
+      ${a.potasyum != null ? `<tr><td>Potasyum</td><td>${a.potasyum} kg/da</td></tr>` : ''}
+      ${a.kalsiyum != null ? `<tr><td>Kalsiyum</td><td>${a.kalsiyum} kg/da</td></tr>` : ''}
+      ${a.magnezyum != null ? `<tr><td>Magnezyum</td><td>${a.magnezyum} kg/da</td></tr>` : ''}
+      ${a.tuz != null ? `<tr><td>Tuz</td><td>${a.tuz} %</td></tr>` : ''}
+    </table>
+    ${a.notlar ? `<div class="notlar">📝 ${a.notlar}</div>` : ''}
+  `).join('')
+}
+<br><button onclick="window.print()">🖨️ Yazdır / PDF Kaydet</button>
+</body></html>`
+
+    const w = window.open('', '_blank')
+    w.document.write(html)
+    w.document.close()
+  }
+
   const kaydet = async () => {
     const hatalar = {}
     if (!form.isletme) hatalar.isletme = true
@@ -666,6 +719,15 @@ export default function ReceteYaz() {
       <BiyolojikBolum items={biyolojik} setItems={setBiyolojik} />
       <TakipBolum     items={takip}     setItems={setTakip} />
 
+      {/* Toprak Analizi PDF */}
+      {seciliIsletme && (
+        <div style={s.toprakBar}>
+          <button style={s.toprakBtn} onClick={() => toprakAnalizPdf(seciliIsletme)}>
+            🧪 Toprak Analizi PDF
+          </button>
+        </div>
+      )}
+
       {/* Alt bar */}
       {hata && <p style={s.hata}>{hata}</p>}
       <div style={s.altBar}>
@@ -695,6 +757,8 @@ const s = {
   geriBtn:   { background:'none', border:'none', cursor:'pointer', color:'#888', fontSize:'0.9rem', padding:'6px 0' },
   kaydetBtn: { padding:'9px 22px', background:'#1a7a4a', color:'#fff', border:'none', borderRadius:'8px', cursor:'pointer', fontSize:'0.9rem', fontWeight:'600' },
   iptalBtn:  { padding:'9px 18px', background:'#f0f0f0', color:'#555', border:'none', borderRadius:'8px', cursor:'pointer', fontSize:'0.9rem' },
+  toprakBar: { margin:'12px 0', display:'flex' },
+  toprakBtn: { padding:'9px 20px', background:'#fff', color:'#1a7a4a', border:'1px solid #c8e6d4', borderRadius:'8px', cursor:'pointer', fontSize:'0.9rem', fontWeight:'500' },
   ziyaretBtn: { padding:'9px 18px', background:'#f0f0f0', color:'#1a7a4a', border:'1px solid #c8e6d4', borderRadius:'8px', cursor:'pointer', fontSize:'0.9rem', fontWeight:'500' },
 
   temelKart: { background:'#fff', border:'1px solid #e8e8e8', borderRadius:'12px', padding:'1.25rem', marginBottom:'10px' },
