@@ -43,6 +43,15 @@ class UrunCesitListView(generics.ListAPIView):
 
 # ── MÜHENDİS – ÇİFTÇİ ──
 
+class CiftciListView(generics.ListAPIView):
+    """Mühendis için tüm aktif çiftçiler (dropdown doldurmak için)"""
+    permission_classes = [IsMuhendis]
+    serializer_class   = CiftciSerializer
+
+    def get_queryset(self):
+        return Ciftci.objects.filter(aktif=True).prefetch_related('isletmeler')
+
+
 class CiftciAraView(APIView):
     permission_classes = [IsMuhendis]
 

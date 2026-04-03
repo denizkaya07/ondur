@@ -53,11 +53,24 @@ class CiftciKisaSerializer(serializers.ModelSerializer):
 
 
 class MuhendisIsletmeSerializer(serializers.ModelSerializer):
-    isletme = IsletmeSerializer(read_only=True)
+    isletme     = IsletmeSerializer(read_only=True)
+    muhendis_ad = serializers.SerializerMethodField()
+    ciftci_ad   = serializers.SerializerMethodField()
+    ciftci_ilce = serializers.SerializerMethodField()
+
+    def get_muhendis_ad(self, obj):
+        return obj.muhendis.get_full_name() or obj.muhendis.username
+
+    def get_ciftci_ad(self, obj):
+        c = obj.isletme.ciftci
+        return f'{c.ad} {c.soyad}'
+
+    def get_ciftci_ilce(self, obj):
+        return obj.isletme.ciftci.ilce or ''
 
     class Meta:
         model  = MuhendisIsletme
-        fields = ['id', 'isletme', 'durum', 'talep_tarihi', 'yanit_tarihi']
+        fields = ['id', 'isletme', 'muhendis_ad', 'ciftci_ad', 'ciftci_ilce', 'durum', 'talep_tarihi', 'yanit_tarihi']
 
 from .models import CiftciBayii
 

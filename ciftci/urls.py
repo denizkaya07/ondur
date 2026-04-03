@@ -7,6 +7,7 @@ urlpatterns = [
     path('urunler/<int:urun_id>/cesitler/', views.UrunCesitListView.as_view(), name='urun-cesit-list'),
 
     # Mühendis endpoint'leri
+    path('liste/', views.CiftciListView.as_view(), name='ciftci-liste'),
     path('ara/', views.CiftciAraView.as_view(), name='ciftci-ara'),
     path('talep/', views.MuhendisIsletmeTalepView.as_view(), name='isletme-talep'),
     path('danisanlarim/', views.MuhendisDanisanlarView.as_view(), name='danisanlar'),

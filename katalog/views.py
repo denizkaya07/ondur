@@ -103,6 +103,14 @@ class UreticiGubreListView(generics.ListCreateAPIView):
         serializer.save(uretici=uretici)
 
 
+class UreticiGubreGuncelleView(generics.UpdateAPIView):
+    permission_classes = [IsUretici]
+    serializer_class   = GubreSerializer
+
+    def get_queryset(self):
+        return Gubre.objects.filter(uretici__kullanici=self.request.user)
+
+
 # ── BAYİİ ──
 
 class BayiiUrunListView(generics.ListCreateAPIView):

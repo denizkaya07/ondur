@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reçete Yaz — Sera Reçete Sistemi</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f4f0;
+  --surface: #fff;
+  --border: #e2e8e2;
+  --text: #0f1f0f;
+  --muted: #6b8f6b;
+  --accent: #16a34a;
+  --accent-light: #dcfce7;
+  --accent-dark: #15803d;
+  --blue: #0ea5e9;
+  --blue-light: #e0f2fe;
+  --orange: #f59e0b;
+  --orange-light: #fef3c7;
+  --red: #ef4444;
+  --red-light: #fee2e2;
+  --shadow: 0 1px 4px rgba(0,0,0,.07);
+  --shadow-md: 0 4px 20px rgba(0,0,0,.1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 24px 28px;
+}
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title { font-size: 13px; font-weight: 700; }
+
+/* ── FORM ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { margin-bottom: 0; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+  transition: border-color .15s;
+}
+.form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(22,163,74,.1); }
+textarea.form-control { resize: vertical; min-height: 70px; }
+select.form-control { cursor: pointer; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  transition: all .15s;
+  font-family: inherit;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent-dark); }
+.btn.lg { padding: 11px 22px; font-size: 13px; border-radius: 10px; }
+.btn.danger { color: var(--red); border-color: var(--red-light); }
+.btn.danger:hover { background: var(--red-light); }
+
+.clr-btn {
+  flex-shrink: 0;
+  width: 20px;
+  height: 26px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #ccc;
+  padding: 0;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color .15s, background .15s;
+}
+.clr-btn:hover { color: var(--red); background: var(--red-light); }
+
+/* ── SELECTION BAR ── */
+.selection-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+}
+.sel-item { display: flex; align-items: center; gap: 8px; }
+.sel-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  display: block;
+  margin-bottom: 2px;
+}
+.sel-val { font-size: 13px; font-weight: 700; }
+.sel-sep { width: 1px; height: 36px; background: var(--border); }
+
+.farmer-av {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* ── PERIOD BLOCKS ── */
+.period-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.period-header {
+  padding: 11px 16px;
+  background: #f0faf4;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.period-title { font-size: 13px; font-weight: 700; color: var(--accent); }
+.period-footer {
+  padding: 10px 14px;
+  border-top: 1px dashed var(--border);
+  background: #fafcfa;
+}
+
+.period-table { width: 100%; border-collapse: collapse; }
+.period-table th {
+  padding: 8px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: left;
+  background: #fafbfa;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.period-table td {
+  padding: 9px 10px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.period-table tr:last-child td { border-bottom: none; }
+.period-table tr:hover td { background: #fafcfa; }
+
+/* ── SUCCESS ── */
+.success-screen { text-align: center; padding: 48px 24px; }
+.success-icon {
+  width: 72px;
+  height: 72px;
+  background: var(--accent-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin: 0 auto 20px;
+}
+.success-screen h2 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+.success-screen p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.rec-no {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 8px 20px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 580px;
+  max-width: 95vw;
+  max-height: 82vh;
+  overflow-y: auto;
+  padding: 26px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.modal-title { font-size: 17px; font-weight: 800; margin-bottom: 18px; }
+.modal-close {
+  float: right;
+  cursor: pointer;
+  background: #f3f4f6;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 15px;
+  line-height: 28px;
+  text-align: center;
+}
+.recete-preview { font-size: 11px; line-height: 1.8; }
+.recete-hdr { background: #f0faf4; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+.rec-tbl { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+.rec-tbl th { background: var(--accent); color: #fff; padding: 6px 10px; text-align: left; font-size: 10px; }
+.rec-tbl td { padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 10px; }
+.rec-tbl tr:nth-child(even) td { background: #f9fafb; }
+
+/* ── STEP VIEWS ── */
+.step-view { display: none; }
+.step-view.active { display: block; animation: fadeIn .22s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+  margin-top: 16px;
+}
+</style>
+</head>
+<body>
+
+<!-- ════ STEP 3: REÇETE YAZ ════ -->
+<div class="step-view active" id="step-3">
+
+  <!-- Seçim özet çubuğu -->
+  <div class="selection-bar">
+    <div class="sel-item">
+      <div class="farmer-av" id="sel-farmer-av2" style="width:32px;height:32px;font-size:11px;">MD</div>
+      <div>
+        <span class="sel-label">Çiftçi</span>
+        <span class="sel-val" id="sel-farmer-name2">Mehmet Demir</span>
+      </div>
+    </div>
+    <div class="sel-sep"></div>
+    <div class="sel-item">
+      <span style="font-size:20px;" id="sel-gh-icon2">🏗️</span>
+      <div>
+        <span class="sel-label">Sera / İşletme</span>
+        <span class="sel-val" id="sel-gh-name2">Cam Sera 1</span>
+      </div>
+    </div>
+    <div class="sel-sep"></div>
+    <div class="sel-item">
+      <span style="font-size:18px;">🌱</span>
+      <div>
+        <span class="sel-label">Ürün / Çeşit</span>
+        <span class="sel-val" id="sel-gh-crop2">Domates · Salkım</span>
+      </div>
+    </div>
+    <div class="sel-sep"></div>
+    <div class="sel-item">
+      <span style="font-size:18px;">📅</span>
+      <div>
+        <span class="sel-label">Dikim Tarihi</span>
+        <span class="sel-val" id="sel-gh-plantdate2" style="font-family:'JetBrains Mono';font-size:12px;">—</span>
+      </div>
+    </div>
+    <div class="sel-sep"></div>
+    <div class="sel-item">
+      <div>
+        <span class="sel-label">Reçete No</span>
+        <span class="sel-val" style="font-family:'JetBrains Mono';font-size:12px;" id="rec-no-display">REC-AUTO</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tanı Bilgileri -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-header">
+      <span class="card-title">🔬 Tanı Bilgileri</span>
+    </div>
+    <div style="padding:18px;">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Tanı / Teşhis *</label>
+          <textarea class="form-control" id="pr-diagnosis" placeholder="Hastalık veya zararlı tanısı..." rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanı Türü</label>
+          <select class="form-control" id="pr-diag-type">
+            <option selected>Normal</option>
+            <option>Hastalık</option>
+            <option>Zararlı</option>
+            <option>Beslenme Bozukluğu</option>
+            <option>Diğer</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Takip Tarihi</label>
+          <input class="form-control" type="date" id="pr-followup">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Genel Notlar</label>
+          <textarea class="form-control" id="pr-notes" placeholder="Opsiyonel ek notlar..." rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sulama Dönemleri (dinamik, JS ile doldurulur) -->
+  <div id="periods-container"></div>
+
+  <div style="margin-bottom:4px;">
+    <button class="btn" onclick="addPeriod()" style="width:100%;justify-content:center;border-style:dashed;color:var(--muted);font-size:12px;">
+      💧 Yeni Sulama Ekle
+    </button>
+  </div>
+
+</div><!-- /step-3 -->
+
+<!-- Kaydet butonu -->
+<div class="bottom-nav">
+  <div></div>
+  <button class="btn primary lg" onclick="saveAndFinish()">💾 Reçeteyi Kaydet</button>
+</div>
+
+<!-- ════ STEP 4: TAMAMLANDI ════ -->
+<div class="step-view" id="step-4">
+  <div class="card">
+    <div class="success-screen">
+      <div class="success-icon">✅</div>
+      <h2>Reçete Başarıyla Oluşturuldu!</h2>
+      <p id="success-desc">Reçete kaydedildi ve PDF olarak alınmaya hazır.</p>
+      <div class="rec-no" id="success-rec-no">REC-260326-AUTO</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn primary lg" onclick="openPdfModal()">📄 PDF İndir</button>
+        <button class="btn lg" onclick="showStep(3)">✏️ Reçeteyi Düzenle</button>
+        <button class="btn lg" onclick="resetForm()">+ Yeni Reçete Yaz</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PDF Önizleme Modalı -->
+<div class="modal-overlay" id="pdf-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closePdf()">✕</button>
+    <div class="modal-title">📄 Reçete Önizleme</div>
+    <div class="recete-preview" id="pdf-preview-content">
+      <!-- JS tarafından doldurulur -->
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn primary" onclick="closePdf()">📥 PDF İndir</button>
+      <button class="btn" onclick="closePdf()">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───
+const state = {
+  farmer: {
+    name: 'Mehmet Demir',
+    initials: 'MD',
+    phone: '0532 123 45 67',
+  },
+  greenhouse: {
+    name: 'Cam Sera 1',
+    icon: '🏗️',
+    area: '1.200',   // m² (nokta binlik ayracı)
+    crop: 'Domates',
+    variety: 'Salkım',
+    plantDate: '2026-01-15',
+  },
+  periods: [],
+  periodCount: 0,
+  recNo: '',
+};
+
+// ─── İLAÇ / GÜBRE VERİTABANI (500 ürün) ───
+const MEDICINE_DB = {
+  // ── FUNGİSİT (100) ──
+  'Switch 62.5 WG':         { type:'Fungisit',   active:'Cyprodinil + Fludioxonil',           dose:'0.8',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Rovral Aquaflo':         { type:'Fungisit',   active:'Iprodione',                          dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Ortiva 250 SC':          { type:'Fungisit',   active:'Azoxystrobin',                       dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Signum WG':              { type:'Fungisit',   active:'Boscalid + Pyraclostrobin',          dose:'0.6',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Teldor 500 SC':          { type:'Fungisit',   active:'Fenhexamid',                         dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Amistar 250 SC':         { type:'Fungisit',   active:'Azoxystrobin',                       dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Topas 250 EC':           { type:'Fungisit',   active:'Penconazole',                        dose:'0.3',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Score 250 EC':           { type:'Fungisit',   active:'Difenoconazole',                     dose:'0.4',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Folicur 250 EW':         { type:'Fungisit',   active:'Tebuconazole',                       dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Bayleton 250 EC':        { type:'Fungisit',   active:'Triadimefon',                        dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Quadris 250 SC':         { type:'Fungisit',   active:'Azoxystrobin',                       dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Cabrio Top WG':          { type:'Fungisit',   active:'Pyraclostrobin + Metiram',           dose:'1.8',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Acrobat MZ WG':          { type:'Fungisit',   active:'Dimethomorph + Mancozeb',            dose:'2.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Curzate M WG':           { type:'Fungisit',   active:'Cymoxanil + Mancozeb',               dose:'2.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Ridomil Gold MZ':        { type:'Fungisit',   active:'Metalaxyl-M + Mancozeb',             dose:'2.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Previcur Energy':        { type:'Fungisit',   active:'Fosetyl-Al + Propamocarb',           dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Aliette 80 WG':          { type:'Fungisit',   active:'Fosetyl-Al',                         dose:'2.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Dithane M-45':           { type:'Fungisit',   active:'Mancozeb',                           dose:'2.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Bravo 500 SC':           { type:'Fungisit',   active:'Chlorothalonil',                     dose:'2.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Captan 50 WP':           { type:'Fungisit',   active:'Captan',                             dose:'2.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Funguran OH WP':         { type:'Fungisit',   active:'Bakır Hidroksit',                    dose:'3.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Kocide 2000 WG':         { type:'Fungisit',   active:'Bakır Hidroksit',                    dose:'2.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Polyram DF':             { type:'Fungisit',   active:'Metiram',                            dose:'2.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Antracol 70 WP':         { type:'Fungisit',   active:'Propineb',                           dose:'2.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Penncozeb 80 WP':        { type:'Fungisit',   active:'Mancozeb',                           dose:'2.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Folpan 50 WP':           { type:'Fungisit',   active:'Folpet',                             dose:'2.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Flint 50 WG':            { type:'Fungisit',   active:'Trifloxystrobin',                    dose:'0.3',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Stroby WG':              { type:'Fungisit',   active:'Kresoxim-methyl',                    dose:'0.15', unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Comet 200 EC':           { type:'Fungisit',   active:'Pyraclostrobin',                     dose:'0.75', unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Operetta 12.5 EC':       { type:'Fungisit',   active:'Myclobutanil',                       dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Opus 125 EC':            { type:'Fungisit',   active:'Epoxiconazole',                      dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Bayfidan 250 EC':        { type:'Fungisit',   active:'Triadimenol',                        dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Elf 125 SC':             { type:'Fungisit',   active:'Hexaconazole',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Anvil 5 SC':             { type:'Fungisit',   active:'Hexaconazole',                       dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Sportak 45 EC':          { type:'Fungisit',   active:'Prochloraz',                         dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Bumper 25 EC':           { type:'Fungisit',   active:'Propiconazole',                      dose:'0.6',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Tilt 250 EC':            { type:'Fungisit',   active:'Propiconazole',                      dose:'0.4',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Ronilan DF':             { type:'Fungisit',   active:'Vinclozolin',                        dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Sumisclex 50 WP':        { type:'Fungisit',   active:'Procymidone',                        dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Iprofos 500 SC':         { type:'Fungisit',   active:'Iprodione',                          dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Luna Experience':        { type:'Fungisit',   active:'Fluopyram + Tebuconazole',           dose:'0.75', unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Luna Sensation':         { type:'Fungisit',   active:'Fluopyram + Trifloxystrobin',        dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Sercadis 300 SC':        { type:'Fungisit',   active:'Fluxapyroxad',                       dose:'0.4',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Miravis Duo':            { type:'Fungisit',   active:'Pydiflumetofen + Propiconazole',     dose:'0.7',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Revus 250 SC':           { type:'Fungisit',   active:'Mandipropamid',                      dose:'0.6',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Infinito 687.5 SC':      { type:'Fungisit',   active:'Fluopicolide + Propamocarb',         dose:'1.2',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Equation Pro WG':        { type:'Fungisit',   active:'Famoxadone + Cymoxanil',             dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Galben M WP':            { type:'Fungisit',   active:'Benalaxyl + Mancozeb',               dose:'2.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Folio Gold 517.5 SC':    { type:'Fungisit',   active:'Metalaxyl-M + Chlorothalonil',       dose:'2.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Melody Duo 66.8 WP':     { type:'Fungisit',   active:'Iprovalicarb + Propineb',            dose:'1.8',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Paraat 20 WG':           { type:'Fungisit',   active:'Dimethomorph',                       dose:'0.3',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Forum 500 SC':           { type:'Fungisit',   active:'Dimethomorph',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Verita WG':              { type:'Fungisit',   active:'Fenamidone + Fosetyl-Al',            dose:'2.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Ranman Top SC':          { type:'Fungisit',   active:'Cyazofamid + Propamocarb',           dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Zampro 560 SC':          { type:'Fungisit',   active:'Ametoctradin + Dimethomorph',        dose:'0.6',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Topcop 77 WP':           { type:'Fungisit',   active:'Bakır Oksitklorür',                  dose:'3.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Cupravit WG':            { type:'Fungisit',   active:'Bakır Oksitklorür',                  dose:'2.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Thiovit Jet WG':         { type:'Fungisit',   active:'Kükürt',                             dose:'3.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Kumulus DF':             { type:'Fungisit',   active:'Kükürt',                             dose:'3.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Microsulfo WG':          { type:'Fungisit',   active:'Kükürt',                             dose:'4.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Cantus Gold WG':         { type:'Fungisit',   active:'Boscalid + Dimoxystrobin',           dose:'0.8',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Pristine WG':            { type:'Fungisit',   active:'Boscalid + Pyraclostrobin',          dose:'0.8',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Scala 400 SC':           { type:'Fungisit',   active:'Pyrimethanil',                       dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Mythos 300 SC':          { type:'Fungisit',   active:'Pyrimethanil',                       dose:'1.2',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Geoxe 50 WG':            { type:'Fungisit',   active:'Fludioxonil',                        dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Thiram 80 WG':           { type:'Fungisit',   active:'Thiram',                             dose:'2.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Prolectus 50 WG':        { type:'Fungisit',   active:'Fenpyrazamine',                      dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Verben EC':              { type:'Fungisit',   active:'Cyflufenamid',                       dose:'0.2',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Talendo Extra SC':       { type:'Fungisit',   active:'Proquinazid + Tetraconazole',        dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Nimrod 25 EC':           { type:'Fungisit',   active:'Bupirimate',                         dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Nustar 40 EC':           { type:'Fungisit',   active:'Flusilazole',                        dose:'0.4',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Systhane 20 EW':         { type:'Fungisit',   active:'Myclobutanil',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Fontelis SC':            { type:'Fungisit',   active:'Penthiopyrad',                       dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Sumi-8 12.5 WP':         { type:'Fungisit',   active:'Diniconazole',                       dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Rubigan 12 EC':          { type:'Fungisit',   active:'Fenarimol',                          dose:'0.6',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Impact 125 SC':          { type:'Fungisit',   active:'Flutriafol',                         dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Alert 375 SC':           { type:'Fungisit',   active:'Flusilazole + Carbendazim',          dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Cymbal 45 SC':           { type:'Fungisit',   active:'Cymoxanil',                          dose:'0.25', unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Profiler WG':            { type:'Fungisit',   active:'Fluopicolide + Fosetyl-Al',          dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Vivando 500 SC':         { type:'Fungisit',   active:'Metrafenone',                        dose:'0.4',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Discus DF':              { type:'Fungisit',   active:'Kresoxim-methyl + Bupirimate',       dose:'0.2',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Timorex Gold 24 EC':     { type:'Fungisit',   active:'Melaleuca alternifolia Yağı',        dose:'2.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Maxim XL 035 FS':        { type:'Fungisit',   active:'Metalaxyl-M + Fludioxonil',          dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Champion WP':            { type:'Fungisit',   active:'Bakır Hidroksit',                    dose:'2.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Mirage 45 EC':           { type:'Fungisit',   active:'Prochloraz',                         dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Reboot 625 SC':          { type:'Fungisit',   active:'Ametoctradin + Dimethomorph',        dose:'0.6',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Infinity 687 SC':        { type:'Fungisit',   active:'Fluopicolide + Propamocarb',         dose:'1.2',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Saprol Yeni EC':         { type:'Fungisit',   active:'Triforine',                          dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Bordovit WP':            { type:'Fungisit',   active:'Bordo Bulamacı',                     dose:'4.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Cuprite 25 SC':          { type:'Fungisit',   active:'Bakır Oksitklorür',                  dose:'2.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Indofil M-45 WP':        { type:'Fungisit',   active:'Mancozeb',                           dose:'2.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Sulfex 80 WP':           { type:'Fungisit',   active:'Kükürt',                             dose:'3.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Anilinex 500 SC':        { type:'Fungisit',   active:'Pyrimethanil',                       dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Cannonball WG':          { type:'Fungisit',   active:'Cyazofamid',                         dose:'0.3',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Euparen Multi WG':       { type:'Fungisit',   active:'Tolylfluanid',                       dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Zineb 80 WP':            { type:'Fungisit',   active:'Zineb',                              dose:'2.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Tazer 20 SC':            { type:'Fungisit',   active:'Cyflufenamid',                       dose:'0.3',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+
+  // ── İNSEKTİSİT (100) ──
+  'Confidor 350 SC':        { type:'İnsektisit', active:'Imidacloprid',                       dose:'0.2',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Actara 25 WG':           { type:'İnsektisit', active:'Thiamethoxam',                       dose:'0.2',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Mospilan 20 SP':         { type:'İnsektisit', active:'Acetamiprid',                        dose:'0.15', unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Calypso 480 SC':         { type:'İnsektisit', active:'Thiacloprid',                        dose:'0.2',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Movento 100 SC':         { type:'İnsektisit', active:'Spirotetramat',                      dose:'0.75', unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Karate Zeon 50 CS':      { type:'İnsektisit', active:'Lambda-cyhalothrin',                 dose:'0.3',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Decis Forte 100 EC':     { type:'İnsektisit', active:'Deltamethrin',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Fastac 100 EC':          { type:'İnsektisit', active:'Alpha-cypermethrin',                 dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Nurelle D 550 EC':       { type:'İnsektisit', active:'Chlorpyrifos + Cypermethrin',        dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Dursban 4 EC':           { type:'İnsektisit', active:'Chlorpyrifos',                       dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Rogor L 40 EC':          { type:'İnsektisit', active:'Dimethoate',                         dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Perfekthion 400 EC':     { type:'İnsektisit', active:'Dimethoate',                         dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Fythion 50 EC':          { type:'İnsektisit', active:'Malathion',                          dose:'2.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Vertimec 018 EC':        { type:'İnsektisit', active:'Abamectin',                          dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Affirm 095 SG':          { type:'İnsektisit', active:'Emamectin benzoate',                 dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Proclaim 5 SG':          { type:'İnsektisit', active:'Emamectin benzoate',                 dose:'0.4',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Spintor 240 SC':         { type:'İnsektisit', active:'Spinosad',                           dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Delegate 250 WG':        { type:'İnsektisit', active:'Spinetoram',                         dose:'0.4',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Steward 30 EC':          { type:'İnsektisit', active:'Indoxacarb',                         dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Avaunt 150 EC':          { type:'İnsektisit', active:'Indoxacarb',                         dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Radiant 120 SC':         { type:'İnsektisit', active:'Spinetoram',                         dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Exirel 100 SE':          { type:'İnsektisit', active:'Cyantraniliprole',                   dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Coragen 200 SC':         { type:'İnsektisit', active:'Chlorantraniliprole',                dose:'0.2',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Altacor 35 WG':          { type:'İnsektisit', active:'Chlorantraniliprole',                dose:'0.1',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Voliam Flexi SC':        { type:'İnsektisit', active:'Chlorantraniliprole + Thiamethoxam', dose:'0.6',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Ampligo 150 ZC':         { type:'İnsektisit', active:'Chlorantraniliprole + Lambda-cyh.',  dose:'0.4',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Chess 500 WG':           { type:'İnsektisit', active:'Pymetrozine',                        dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Plenum 50 WG':           { type:'İnsektisit', active:'Pymetrozine',                        dose:'0.4',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Teppeki 50 WG':          { type:'İnsektisit', active:'Flonicamid',                         dose:'0.14', unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Closer 500 SC':          { type:'İnsektisit', active:'Sulfoxaflor',                        dose:'0.3',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Sivanto Prime 200 SL':   { type:'İnsektisit', active:'Flupyradifurone',                    dose:'0.7',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Verimark 200 SC':        { type:'İnsektisit', active:'Cyantraniliprole',                   dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Sulama Suyu' },
+  'Voliam Targo SC':        { type:'İnsektisit', active:'Chlorantraniliprole + Abamectin',    dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Match 050 EC':           { type:'İnsektisit', active:'Lufenuron',                          dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Nomolt 150 SC':          { type:'İnsektisit', active:'Teflubenzuron',                      dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Dimilin 25 WP':          { type:'İnsektisit', active:'Diflubenzuron',                      dose:'0.3',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Alsystin 25 WP':         { type:'İnsektisit', active:'Triflumuron',                        dose:'0.3',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Insegar 25 WG':          { type:'İnsektisit', active:'Fenoxycarb',                         dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Admiral 100 EC':         { type:'İnsektisit', active:'Pyriproxyfen',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Rimon 10 EC':            { type:'İnsektisit', active:'Novaluron',                          dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Trebon 30 EC':           { type:'İnsektisit', active:'Etofenprox',                         dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Lannate 25 WP':          { type:'İnsektisit', active:'Methomyl',                           dose:'0.6',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Larvin 375 SC':          { type:'İnsektisit', active:'Thiodicarb',                         dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Pirimor 50 DF':          { type:'İnsektisit', active:'Pirimicarb',                         dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Aphox 50 WG':            { type:'İnsektisit', active:'Pirimicarb',                         dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Biscaya 240 OD':         { type:'İnsektisit', active:'Thiacloprid',                        dose:'0.3',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Proteus 110 OD':         { type:'İnsektisit', active:'Thiacloprid + Deltamethrin',         dose:'0.7',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Sumi-Alpha 5 EC':        { type:'İnsektisit', active:'Esfenvalerate',                      dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Fury 10 EW':             { type:'İnsektisit', active:'Zeta-cypermethrin',                  dose:'0.4',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Talstar 100 EC':         { type:'İnsektisit', active:'Bifenthrin',                         dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Belt 480 SC':            { type:'İnsektisit', active:'Flubendiamide',                      dose:'0.2',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Trigard 75 WP':          { type:'İnsektisit', active:'Cyromazine',                         dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Muralla Delta 225 SC':   { type:'İnsektisit', active:'Deltamethrin + Cyantraniliprole',    dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Volero 50 WG':           { type:'İnsektisit', active:'Pymetrozine + Acetamiprid',          dose:'0.3',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Alanto 500 SC':          { type:'İnsektisit', active:'Thiamethoxam + Teflubenzuron',       dose:'0.3',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Mohican 500 WG':         { type:'İnsektisit', active:'Pirimicarb + Lambda-cyhalothrin',    dose:'0.6',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Sherpa 100 EC':          { type:'İnsektisit', active:'Cypermethrin',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Karate Plus EC':         { type:'İnsektisit', active:'Lambda-cyhalothrin + Dimethoate',    dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Piriforce 50 SC':        { type:'İnsektisit', active:'Pyriproxyfen',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Tanrek 200 SL':          { type:'İnsektisit', active:'Imidacloprid',                       dose:'0.3',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Admire 350 SC':          { type:'İnsektisit', active:'Imidacloprid',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Kohinor 200 SL':         { type:'İnsektisit', active:'Imidacloprid',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Epik 20 SP':             { type:'İnsektisit', active:'Acetamiprid',                        dose:'0.25', unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Titan 20 SL':            { type:'İnsektisit', active:'Acetamiprid',                        dose:'0.25', unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Nexide 60 CS':           { type:'İnsektisit', active:'Gamma-cyhalothrin',                  dose:'0.15', unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Sumo 10 CS':             { type:'İnsektisit', active:'Lambda-cyhalothrin',                 dose:'0.3',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Warrior 250 CS':         { type:'İnsektisit', active:'Lambda-cyhalothrin',                 dose:'0.3',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Benevia 100 OD':         { type:'İnsektisit', active:'Cyantraniliprole',                   dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Minecto Pro SC':         { type:'İnsektisit', active:'Cyantraniliprole + Abamectin',       dose:'0.6',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Transform 50 WG':        { type:'İnsektisit', active:'Sulfoxaflor',                        dose:'0.3',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Sefina 50 WG':           { type:'İnsektisit', active:'Afidopyropen',                       dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Requiem Prime SC':       { type:'İnsektisit', active:'Yağ Asitleri C7-C20',                dose:'3.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Reldan 40 EC':           { type:'İnsektisit', active:'Chlorpyrifos-methyl',                dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Imidan 50 WG':           { type:'İnsektisit', active:'Phosmet',                            dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Diazinon 60 EC':         { type:'İnsektisit', active:'Diazinon',                           dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Bulldock 025 EC':        { type:'İnsektisit', active:'Beta-cyfluthrin',                    dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Malathion 57 EC':        { type:'İnsektisit', active:'Malathion',                          dose:'2.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Jackal 25 EC':           { type:'İnsektisit', active:'Lufenuron',                          dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Durivo 527 SC':          { type:'İnsektisit', active:'Chlorantraniliprole + Thiamethoxam', dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Suncarbamyl 90 SP':      { type:'İnsektisit', active:'Methomyl',                           dose:'0.2',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Cronus 600 WG':          { type:'İnsektisit', active:'Thiamethoxam + Abamectin',           dose:'0.2',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Oxam 10 G':              { type:'İnsektisit', active:'Oxamyl',                             dose:'5.0',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Cascade 5 EC':           { type:'İnsektisit', active:'Flufenoxuron',                       dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Gaucho 600 FS':          { type:'İnsektisit', active:'Imidacloprid',                       dose:'5.0',  unit:'ml/cc', base:'sabit', method:'Toprak' },
+  'Trigard 75 WG':          { type:'İnsektisit', active:'Cyromazine',                         dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Plestar WG':             { type:'İnsektisit', active:'Thiamethoxam + Chlorantraniliprole', dose:'0.3',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Sparviero 200 SL':       { type:'İnsektisit', active:'Flupyradifurone',                    dose:'0.7',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Aria 50 WG':             { type:'İnsektisit', active:'Flonicamid',                         dose:'0.14', unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Verismo 100 EC':         { type:'İnsektisit', active:'Spirotetramat',                      dose:'0.75', unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+
+  // ── AKARİSİT (50) ──
+  'Kanemite 15 SC':         { type:'Akarisit',   active:'Acequinocyl',                        dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Envidor 240 SC':         { type:'Akarisit',   active:'Spirodiclofen',                      dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Floramite 240 SC':       { type:'Akarisit',   active:'Bifenazate',                         dose:'0.6',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Oberon 240 SC':          { type:'Akarisit',   active:'Spiromesifen',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Nissorun 10 WP':         { type:'Akarisit',   active:'Hexythiazox',                        dose:'0.6',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Apollo 50 SC':           { type:'Akarisit',   active:'Clofentezine',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Zoom 11 SC':             { type:'Akarisit',   active:'Etoxazole',                          dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Baroque 500 SC':         { type:'Akarisit',   active:'Etoxazole',                          dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Magister 200 SC':        { type:'Akarisit',   active:'Fenazaquin',                         dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Kiron 570 EC':           { type:'Akarisit',   active:'Fenpropathrin',                      dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Ortus 5 SC':             { type:'Akarisit',   active:'Fenpyroximate',                      dose:'0.75', unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Masai 20 WP':            { type:'Akarisit',   active:'Tebufenpyrad',                       dose:'0.8',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Sanmite 20 WP':          { type:'Akarisit',   active:'Pyridaben',                          dose:'0.75', unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Dynamec 018 EC':         { type:'Akarisit',   active:'Abamectin',                          dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Milbeknock EC':          { type:'Akarisit',   active:'Milbemectin',                        dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Zoro 36 SC':             { type:'Akarisit',   active:'Tolfenpyrad',                        dose:'0.8',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Polo 500 SC':            { type:'Akarisit',   active:'Diafenthiuron',                      dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Talus 70 WG':            { type:'Akarisit',   active:'Buprofezin',                         dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Nisso Gold 10 WP':       { type:'Akarisit',   active:'Hexythiazox',                        dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Danitron 5 EC':          { type:'Akarisit',   active:'Fenpropathrin',                      dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Neoron 500 EC':          { type:'Akarisit',   active:'Bromopropylate',                     dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Omite 57 EC':            { type:'Akarisit',   active:'Propargite',                         dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Mitac 20 EC':            { type:'Akarisit',   active:'Amitraz',                            dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Amitrex 200 EC':         { type:'Akarisit',   active:'Amitraz',                            dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Romeo 250 SC':           { type:'Akarisit',   active:'Cyflumetofen',                       dose:'0.4',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Gracia 240 SC':          { type:'Akarisit',   active:'Fluacrypyrim',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Forbid 4F SC':           { type:'Akarisit',   active:'Spiromesifen',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Rufast 3 EC':            { type:'Akarisit',   active:'Acrinathrin',                        dose:'0.6',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Nexter 50 SC':           { type:'Akarisit',   active:'Pyridaben',                          dose:'0.6',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Acaristop 50 SC':        { type:'Akarisit',   active:'Clofentezine',                       dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Hexygon 50 DF':          { type:'Akarisit',   active:'Hexythiazox',                        dose:'0.6',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Vendex 50 WP':           { type:'Akarisit',   active:'Fenbutatin oxide',                   dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Acramite 50 WS':         { type:'Akarisit',   active:'Bifenazate',                         dose:'0.8',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Agri-Mek 0.15 EC':       { type:'Akarisit',   active:'Abamectin',                          dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Crematex 33 SC':         { type:'Akarisit',   active:'Pyridaben + Cyflumetofen',           dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Applaud 10 WP':          { type:'Akarisit',   active:'Buprofezin',                         dose:'0.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Tedion V-18 EC':         { type:'Akarisit',   active:'Tetradifon',                         dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Comite 57 EC':           { type:'Akarisit',   active:'Propargite',                         dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Savant 240 SC':          { type:'Akarisit',   active:'Spirotetramat',                      dose:'0.75', unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Spical Plus':            { type:'Akarisit',   active:'Neoseiulus californicus',            dose:'0.5',  unit:'gr',    base:'dekar', method:'Yapraktan' },
+  'Phytofil WP':            { type:'Akarisit',   active:'Phytoseiulus persimilis',            dose:'0.5',  unit:'gr',    base:'dekar', method:'Yapraktan' },
+  'Biomite WP':             { type:'Akarisit',   active:'Paecilomyces fumosoroseus',          dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Acarid 20 EC':           { type:'Akarisit',   active:'Amitraz',                            dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Kaiso Sorbie 50 WG':     { type:'Akarisit',   active:'Lambda-cyhalothrin',                 dose:'0.3',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Torque 50 WP':           { type:'Akarisit',   active:'Fenbutatin oxide',                   dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Limonica WP':            { type:'Akarisit',   active:'Amblyseius limonicus',               dose:'0.5',  unit:'gr',    base:'dekar', method:'Yapraktan' },
+  'Thripor-L WP':           { type:'Akarisit',   active:'Amblyseius cucumeris',               dose:'0.5',  unit:'gr',    base:'dekar', method:'Yapraktan' },
+  'Cascade Akar 5 EC':      { type:'Akarisit',   active:'Flufenoxuron',                       dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Floramite 48 SC':        { type:'Akarisit',   active:'Bifenazate',                         dose:'0.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Versys 360 SC':          { type:'Akarisit',   active:'Cyetpyrafen',                        dose:'0.4',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+
+  // ── HERBİSİT (70) ──
+  'Roundup 360 SL':         { type:'Herbisit',   active:'Glyphosate',                         dose:'400',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Touchdown 360 SL':       { type:'Herbisit',   active:'Glyphosate',                         dose:'400',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Glifosat 480 SL':        { type:'Herbisit',   active:'Glyphosate',                         dose:'300',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Gallant Super 106 EC':   { type:'Herbisit',   active:'Haloxyfop-R-methyl',                 dose:'0.7',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Targa Super 5 EC':       { type:'Herbisit',   active:'Quizalofop-P-ethyl',                 dose:'1.5',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Fusilade Forte 150 EC':  { type:'Herbisit',   active:'Fluazifop-P-butyl',                  dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Agil 100 EC':            { type:'Herbisit',   active:'Propaquizafop',                      dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Centurion 240 EC':       { type:'Herbisit',   active:'Clethodim',                          dose:'0.7',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Select 240 EC':          { type:'Herbisit',   active:'Clethodim',                          dose:'0.7',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Focus Ultra 100 EC':     { type:'Herbisit',   active:'Cycloxydim',                         dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Stomp 330 EC':           { type:'Herbisit',   active:'Pendimethalin',                      dose:'3.3',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Stomp Aqua 455 CS':      { type:'Herbisit',   active:'Pendimethalin',                      dose:'3.3',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Devrinol 50 WP':         { type:'Herbisit',   active:'Napropamide',                        dose:'2.0',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Dual Gold 960 EC':       { type:'Herbisit',   active:'Metolachlor-S',                      dose:'1.5',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Treflan 480 EC':         { type:'Herbisit',   active:'Trifluralin',                        dose:'2.0',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Linurex 50 WP':          { type:'Herbisit',   active:'Linuron',                            dose:'2.0',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Boxer 800 EC':           { type:'Herbisit',   active:'Prosulfocarb',                       dose:'4.0',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Sencor 70 WG':           { type:'Herbisit',   active:'Metribuzin',                         dose:'0.4',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Basagran 480 SL':        { type:'Herbisit',   active:'Bentazone',                          dose:'2.5',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Harmony 75 WG':          { type:'Herbisit',   active:'Thifensulfuron-methyl',              dose:'0.3',  unit:'gr',    base:'dekar', method:'Yapraktan' },
+  'Logran 75 WG':           { type:'Herbisit',   active:'Triasulfuron',                       dose:'0.15', unit:'gr',    base:'dekar', method:'Yapraktan' },
+  'Ally 20 SX':             { type:'Herbisit',   active:'Metsulfuron-methyl',                 dose:'0.3',  unit:'gr',    base:'dekar', method:'Yapraktan' },
+  'Granstar 75 WG':         { type:'Herbisit',   active:'Tribenuron-methyl',                  dose:'0.15', unit:'gr',    base:'dekar', method:'Yapraktan' },
+  'Starane 250 EC':         { type:'Herbisit',   active:'Fluroxypyr',                         dose:'0.8',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'MCPA 500 SL':            { type:'Herbisit',   active:'MCPA',                               dose:'2.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  '2,4-D 720 SL':           { type:'Herbisit',   active:'2,4-Diklorofenoksi asetik asit',     dose:'1.5',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Banvel 480 S':           { type:'Herbisit',   active:'Dicamba',                            dose:'0.3',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Lontrel 300 SL':         { type:'Herbisit',   active:'Clopyralid',                         dose:'0.7',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Betanal Tandem OD':      { type:'Herbisit',   active:'Phenmedipham + Ethofumesate',        dose:'3.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Goltix 700 SC':          { type:'Herbisit',   active:'Metamitron',                         dose:'2.5',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Pyramin DF':             { type:'Herbisit',   active:'Chloridazon',                        dose:'2.5',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Venzar 500 SC':          { type:'Herbisit',   active:'Lenacil',                            dose:'1.5',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Duranet 125 EC':         { type:'Herbisit',   active:'Diuron',                             dose:'1.5',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Simazine 50 WG':         { type:'Herbisit',   active:'Simazine',                           dose:'2.0',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Prometrex 50 SC':        { type:'Herbisit',   active:'Prometryn',                          dose:'2.0',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Pantera 40 EC':          { type:'Herbisit',   active:'Quizalofop-P-tefuryl',               dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Hawk 120 EC':            { type:'Herbisit',   active:'Haloxyfop',                          dose:'0.6',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Correct 240 EC':         { type:'Herbisit',   active:'Fluazifop-P-butyl',                  dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Pilot 180 EC':           { type:'Herbisit',   active:'Clodinafop-propargyl',               dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Puma Super 75 EW':       { type:'Herbisit',   active:'Fenoxaprop-P-ethyl',                 dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Topik 240 EC':           { type:'Herbisit',   active:'Clodinafop-propargyl',               dose:'0.6',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Axial 050 EC':           { type:'Herbisit',   active:'Pinoxaden',                          dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Lotus 720 SL':           { type:'Herbisit',   active:'Glufosinate-ammonium',               dose:'2.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Basta 200 SL':           { type:'Herbisit',   active:'Glufosinate-ammonium',               dose:'3.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Challenge 600 SC':       { type:'Herbisit',   active:'Aclonifen',                          dose:'3.0',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Sultan 50 SC':           { type:'Herbisit',   active:'Metazachlor',                        dose:'2.5',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Butisan Star SC':        { type:'Herbisit',   active:'Metazachlor + Quinmerac',            dose:'2.5',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Kerb Flo 400 SC':        { type:'Herbisit',   active:'Propyzamide',                        dose:'2.5',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Pulsar 40 OD':           { type:'Herbisit',   active:'Imazamox',                           dose:'0.8',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Atlantis OD':            { type:'Herbisit',   active:'Mesosulfuron + Iodosulfuron',        dose:'0.5',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Pixxaro EC':             { type:'Herbisit',   active:'Halauxifen-methyl + Fluroxypyr',     dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Velpar DF':              { type:'Herbisit',   active:'Hexazinone',                         dose:'0.8',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Illoxan CE':             { type:'Herbisit',   active:'Diclofop-methyl',                    dose:'3.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Dominator SL':           { type:'Herbisit',   active:'Glyphosate',                         dose:'400',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Oxytril P EC':           { type:'Herbisit',   active:'Ioxynil + Bromoxynil',               dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Buctril M EC':           { type:'Herbisit',   active:'Bromoxynil + MCPA',                  dose:'1.5',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Ariane C EC':            { type:'Herbisit',   active:'Fluroxypyr + Clopyralid + MCPA',     dose:'1.5',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Traxos 047 EC':          { type:'Herbisit',   active:'Pinoxaden + Clodinafop',             dose:'1.5',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Salvo 200 SL':           { type:'Herbisit',   active:'MCPA + Dicamba',                     dose:'2.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Hussar OD':              { type:'Herbisit',   active:'Iodosulfuron',                       dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Nirvana 045 EC':         { type:'Herbisit',   active:'Imazaquin',                          dose:'0.5',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Tordon 22K':             { type:'Herbisit',   active:'Picloram',                           dose:'0.5',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Karmex 80 WG':           { type:'Herbisit',   active:'Diuron',                             dose:'1.0',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Atranex 500 SC':         { type:'Herbisit',   active:'Atrazine',                           dose:'2.0',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Cleranda SC':            { type:'Herbisit',   active:'Metazachlor + Imazamox',             dose:'2.0',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Fusilade Max 150 EC':    { type:'Herbisit',   active:'Fluazifop-P-butyl',                  dose:'0.8',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Hussar Plus OD':         { type:'Herbisit',   active:'Iodosulfuron + Mesosulfuron',        dose:'1.2',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Amine 600 SL':           { type:'Herbisit',   active:'2,4-D',                              dose:'1.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+  'Lasso 480 EC':           { type:'Herbisit',   active:'Alachlor',                           dose:'2.5',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Imazethapyr 100 AS':     { type:'Herbisit',   active:'Imazethapyr',                        dose:'0.7',  unit:'ml/cc', base:'dekar', method:'Toprak' },
+  'Gramoxone 200 SL':       { type:'Herbisit',   active:'Paraquat',                           dose:'3.0',  unit:'ml/cc', base:'dekar', method:'Yapraktan' },
+
+  // ── GÜBRE (120) ──
+  'Kristalon Mor':          { type:'Gübre',      active:'NPK 13-40-13 + ME',                  dose:'2',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Kristalon Yeşil':        { type:'Gübre',      active:'NPK 18-18-18 + ME',                  dose:'3',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Kristalon Kırmızı':      { type:'Gübre',      active:'NPK 12-12-36 + ME',                  dose:'3',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Kristalon Turuncu':      { type:'Gübre',      active:'NPK 15-5-30 + ME',                   dose:'3',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Kristalon Mavi':         { type:'Gübre',      active:'NPK 19-6-20 + ME',                   dose:'3',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Kristalon Özel':         { type:'Gübre',      active:'NPK 17-5-19 + ME',                   dose:'3',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Fertigofos K':           { type:'Gübre',      active:'MKP 0-52-34',                        dose:'1.5',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Bayfolan Forte':         { type:'Gübre',      active:'NPK 11-8-6 + ME',                    dose:'3',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Wuxal Ca+B':             { type:'Gübre',      active:'Kalsiyum + Bor',                     dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Speedfol Micro':         { type:'Gübre',      active:'Mikro Element Karışımı',             dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Calcinit':               { type:'Gübre',      active:'Kalsiyum Nitrat',                    dose:'150',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Calsal':                 { type:'Gübre',      active:'Kalsiyum Nitrat',                    dose:'150',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Hakaphos Kırmızı':       { type:'Gübre',      active:'NPK 13-40-13',                       dose:'2',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Hakaphos Mavi':          { type:'Gübre',      active:'NPK 10-15-30',                       dose:'3',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Hakaphos Yeşil':         { type:'Gübre',      active:'NPK 15-10-30',                       dose:'3',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Nutrileaf 30-10-10':     { type:'Gübre',      active:'NPK 30-10-10',                       dose:'2',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Nutrileaf 20-20-20':     { type:'Gübre',      active:'NPK 20-20-20',                       dose:'2.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Nutrileaf 15-5-40':      { type:'Gübre',      active:'NPK 15-5-40',                        dose:'2',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Basfoliar 36 Extra':     { type:'Gübre',      active:'Azot 36%',                           dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Basfoliar Aktiv SL':     { type:'Gübre',      active:'NPK 6-4-8 + ME',                     dose:'3',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'YaraVita Caltrac':       { type:'Gübre',      active:'Kalsiyum + Boron',                   dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'YaraVita Zintrac':       { type:'Gübre',      active:'Çinko EDTA',                         dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'YaraVita Bortrac':       { type:'Gübre',      active:'Bor',                                dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'YaraVita Mantrac':       { type:'Gübre',      active:'Mangan',                             dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'YaraVita Fetrilon-Combi':{ type:'Gübre',      active:'EDTA Mikro Element',                 dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'YaraMila Complex':       { type:'Gübre',      active:'NPK 12-11-18 + S + ME',              dose:'50',   unit:'gr',    base:'dekar', method:'Toprak' },
+  'Magnisal':               { type:'Gübre',      active:'Magnezyum Nitrat',                   dose:'150',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Kieserit WG':            { type:'Gübre',      active:'Magnezyum Sülfat',                   dose:'200',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Bittersalz':             { type:'Gübre',      active:'Magnezyum Sülfat',                   dose:'200',  unit:'gr',    base:'dekar', method:'Sulama Suyu' },
+  'MAP 12-61-0':            { type:'Gübre',      active:'Monoamonyum Fosfat',                 dose:'100',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Potasyum Nitrat 13-0-46':{ type:'Gübre',      active:'Potasyum Nitrat',                    dose:'150',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Potasyum Sülfat 0-0-52': { type:'Gübre',      active:'Potasyum Sülfat',                    dose:'150',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'CAN 27':                 { type:'Gübre',      active:'Kalsiyum Amonyum Nitrat',            dose:'200',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Üre 46':                 { type:'Gübre',      active:'Üre',                                dose:'200',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Osmocote 15-9-12':       { type:'Gübre',      active:'Yavaş Salınımlı NPK',               dose:'100',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Osmocote Plus 15-11-13': { type:'Gübre',      active:'Yavaş Salınımlı NPK + ME',          dose:'100',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Sequestrene 138 Fe':     { type:'Gübre',      active:'EDDHA Demir 6%',                     dose:'3',    unit:'gr',    base:'dekar', method:'Sulama Suyu' },
+  'Fetrilon 6% Fe':         { type:'Gübre',      active:'EDTA Demir 6%',                      dose:'2',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Sprint 138 Fe':          { type:'Gübre',      active:'EDDHA Demir 6%',                     dose:'3',    unit:'gr',    base:'dekar', method:'Sulama Suyu' },
+  'Librel Fe DP':           { type:'Gübre',      active:'DTPA Demir',                         dose:'2.5',  unit:'gr',    base:'dekar', method:'Sulama Suyu' },
+  'Hortifer EDDHA':         { type:'Gübre',      active:'EDDHA Demir 6%',                     dose:'3',    unit:'gr',    base:'dekar', method:'Sulama Suyu' },
+  'Zincosol 21':            { type:'Gübre',      active:'Çinko EDTA',                         dose:'1',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Bortrac 150 SL':         { type:'Gübre',      active:'Bor',                                dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Solubor DF':             { type:'Gübre',      active:'Bor',                                dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Borufer SC':             { type:'Gübre',      active:'Bor',                                dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Caltrac 600 SL':         { type:'Gübre',      active:'Kalsiyum Klorür',                    dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Algosol CA SL':          { type:'Gübre',      active:'Deniz Yosunu Özü',                   dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Kelpak SL':              { type:'Gübre',      active:'Ecklonia maxima Özü',                dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Megafol SL':             { type:'Gübre',      active:'Aminoasit + Vitamin',                dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Aminoprim SL':           { type:'Gübre',      active:'Serbest Aminoasit',                  dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Trainer SL':             { type:'Gübre',      active:'Aminoasit',                          dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Radifarm SL':            { type:'Gübre',      active:'Aminoasit + Vitamin B1',             dose:'2',    unit:'ml/cc', base:'dekar', method:'Sulama Suyu' },
+  'Humifirst SC':           { type:'Gübre',      active:'Humat + Aminoasit',                  dose:'2',    unit:'ml/cc', base:'dekar', method:'Sulama Suyu' },
+  'K-Humate SL':            { type:'Gübre',      active:'Potasyum Humat',                     dose:'2',    unit:'ml/cc', base:'dekar', method:'Sulama Suyu' },
+  'NK 14-0-38':             { type:'Gübre',      active:'Potasyum Nitrat',                    dose:'200',  unit:'gr',    base:'dekar', method:'Damla' },
+  'NK 15-0-42':             { type:'Gübre',      active:'Potasyum Nitrat + Kalsiyum',         dose:'200',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Polysulphate 48':        { type:'Gübre',      active:'Polisülfat',                         dose:'150',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Gypsum 30':              { type:'Gübre',      active:'Kalsiyum Sülfat',                    dose:'200',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Dolophat WG':            { type:'Gübre',      active:'Dolomit Kireç',                      dose:'500',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'CombiFeed 20-20-20':     { type:'Gübre',      active:'NPK 20-20-20',                       dose:'2.5',  unit:'gr',    base:'dekar', method:'Damla' },
+  'CombiFeed 10-50-10':     { type:'Gübre',      active:'NPK 10-50-10',                       dose:'2',    unit:'gr',    base:'dekar', method:'Damla' },
+  'CombiFeed 15-5-35':      { type:'Gübre',      active:'NPK 15-5-35',                        dose:'2.5',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Nitrophoska 15-5-20':    { type:'Gübre',      active:'NPK 15-5-20 + S',                    dose:'50',   unit:'gr',    base:'dekar', method:'Toprak' },
+  'Nitrophoska Özel':       { type:'Gübre',      active:'NPK 12-12-17 + ME',                  dose:'50',   unit:'gr',    base:'dekar', method:'Toprak' },
+  'Nitrophoska Mavi':       { type:'Gübre',      active:'NPK 12-12-17 + S + ME',              dose:'50',   unit:'gr',    base:'dekar', method:'Toprak' },
+  'Superfosfat':            { type:'Gübre',      active:'Süper Fosfat',                       dose:'200',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Triplesuper WG':         { type:'Gübre',      active:'Trisüper Fosfat',                    dose:'200',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Hortinova Combo-K':      { type:'Gübre',      active:'NPK 3-0-36',                         dose:'2',    unit:'ml/cc', base:'dekar', method:'Damla' },
+  'Hortinova Ca-K-B':       { type:'Gübre',      active:'Kalsiyum + Potasyum + Bor',          dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Hortinova Amino-Grow':   { type:'Gübre',      active:'Aminoasit + NPK',                    dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Calcimax SL':            { type:'Gübre',      active:'Kalsiyum Klorür',                    dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Ekoprop B':              { type:'Gübre',      active:'Bor + Molibden',                     dose:'1',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'TurboBoost SL':          { type:'Gübre',      active:'NPK + Deniz Yosunu',                 dose:'3',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'GreenStar 20-20-20 SL':  { type:'Gübre',      active:'NPK 20-20-20',                       dose:'2.5',  unit:'ml/cc', base:'dekar', method:'Damla' },
+  'Kemira PG-Mix 15-5-25':  { type:'Gübre',      active:'NPK 15-5-25 + ME',                   dose:'2.5',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Kemira PG-Mix 7-11-27':  { type:'Gübre',      active:'NPK 7-11-27 + ME',                   dose:'2.5',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Kemira PG-Mix 14-0-38':  { type:'Gübre',      active:'NK 14-0-38',                         dose:'2.5',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Kemira PG-Mix 25-5-5':   { type:'Gübre',      active:'NPK 25-5-5',                         dose:'2',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Kemira PG-Mix 4-20-30':  { type:'Gübre',      active:'NPK 4-20-30',                        dose:'2',    unit:'gr',    base:'dekar', method:'Damla' },
+  'Compo Mikro Kombi':      { type:'Gübre',      active:'Mikro Element Karışımı',             dose:'2',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Compo Ortho Ca SL':      { type:'Gübre',      active:'Kalsiyum',                           dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Movilfert 7 Fe EDDHA':   { type:'Gübre',      active:'EDDHA Demir 7%',                     dose:'3',    unit:'gr',    base:'dekar', method:'Sulama Suyu' },
+  'Florovit Fe 6%':         { type:'Gübre',      active:'DTPA Demir 6%',                      dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Florovit Mn 4%':         { type:'Gübre',      active:'Mangan 4%',                          dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Florovit Zn 5%':         { type:'Gübre',      active:'Çinko 5%',                           dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Florovit B 10%':         { type:'Gübre',      active:'Bor 10%',                            dose:'1.5',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Basacid 31 WP':          { type:'Gübre',      active:'Amonyum Sülfat',                     dose:'200',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Vit Force Ca':           { type:'Gübre',      active:'Kalsiyum Formate',                   dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Wuxal Top N':            { type:'Gübre',      active:'NPK 8-0-7 + Aminoasit',              dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Wuxal Micro':            { type:'Gübre',      active:'Mikro Element + Aminoasit',          dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Brexil Ca':              { type:'Gübre',      active:'Kalsiyum Kompleks',                  dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Brexil Zn':              { type:'Gübre',      active:'Çinko Kompleks',                     dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Brexil Fe':              { type:'Gübre',      active:'Demir Kompleks',                     dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Agroleaf Power High N':  { type:'Gübre',      active:'NPK 27-5-5 + ME',                    dose:'2',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Agroleaf Power High K':  { type:'Gübre',      active:'NPK 12-5-40 + ME',                   dose:'2',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Agroleaf Power High P':  { type:'Gübre',      active:'NPK 12-52-5 + ME',                   dose:'2',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Agroleaf Power Total':   { type:'Gübre',      active:'NPK 20-20-20 + ME',                  dose:'2',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Agroleaf Power Calcium': { type:'Gübre',      active:'NPK 15-5-30 + Ca + ME',              dose:'2',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Peters Prof 20-20-20':   { type:'Gübre',      active:'NPK 20-20-20',                       dose:'2.5',  unit:'gr',    base:'dekar', method:'Damla' },
+  'Peters Prof 15-5-25':    { type:'Gübre',      active:'NPK 15-5-25',                        dose:'2.5',  unit:'gr',    base:'dekar', method:'Damla' },
+  'DAP 18-46-0':            { type:'Gübre',      active:'Diamonyum Fosfat',                   dose:'100',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Entec 26 WG':            { type:'Gübre',      active:'Amonyum Nitrat + DMPP',              dose:'200',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Actagro Ca SL':          { type:'Gübre',      active:'Organik Kalsiyum',                   dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Brastimul SL':           { type:'Gübre',      active:'Aminoasit + Bitkisel Özler',         dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Goemar Goteo SL':        { type:'Gübre',      active:'Deniz Yosunu',                       dose:'2',    unit:'ml/cc', base:'dekar', method:'Sulama Suyu' },
+  'Maxicrop Triple SL':     { type:'Gübre',      active:'Deniz Yosunu',                       dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Humiforte SC':           { type:'Gübre',      active:'Fulvik Asit + Humat',                dose:'2',    unit:'ml/cc', base:'dekar', method:'Sulama Suyu' },
+  'Leonardite WG':          { type:'Gübre',      active:'Leonardit',                          dose:'2',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Plantacote Depot 14-9-15':{ type:'Gübre',     active:'Yavaş Salınımlı NPK',               dose:'80',   unit:'gr',    base:'dekar', method:'Toprak' },
+  'Multicote 14-14-14':     { type:'Gübre',      active:'Kaplı NPK',                          dose:'100',  unit:'gr',    base:'dekar', method:'Toprak' },
+  'Wuxal Ascofol SL':       { type:'Gübre',      active:'Deniz Yosunu + Aminoasit + Fe',      dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+
+  // ── BİYOLOJİK (60) ──
+  'DiPel DF':               { type:'Biyolojik',  active:'Bacillus thuringiensis kurstaki',     dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Turex 50 WG':            { type:'Biyolojik',  active:'Bacillus thuringiensis aizawai',      dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Agree WG':               { type:'Biyolojik',  active:'Bacillus thuringiensis aizawai',      dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Foray 48B SC':           { type:'Biyolojik',  active:'Bacillus thuringiensis kurstaki',     dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Javelin WG':             { type:'Biyolojik',  active:'Bacillus thuringiensis kurstaki',     dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Florbac WG':             { type:'Biyolojik',  active:'Bacillus thuringiensis aizawai',      dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Xentari WG':             { type:'Biyolojik',  active:'Bacillus thuringiensis aizawai',      dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Delfin WG':              { type:'Biyolojik',  active:'Bacillus thuringiensis kurstaki',     dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Condor WP':              { type:'Biyolojik',  active:'Bacillus thuringiensis kurstaki',     dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Novodor FC SC':          { type:'Biyolojik',  active:'Bacillus thuringiensis tenebrionis',  dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Naturalis SC':           { type:'Biyolojik',  active:'Beauveria bassiana',                  dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Bb PLUS WP':             { type:'Biyolojik',  active:'Beauveria bassiana',                  dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Oikos WP':               { type:'Biyolojik',  active:'Beauveria bassiana',                  dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Met52 EC':               { type:'Biyolojik',  active:'Metarhizium brunneum',                dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Melocont WP':            { type:'Biyolojik',  active:'Metarhizium anisopliae',              dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'PFR-97 WDG':             { type:'Biyolojik',  active:'Isaria fumosorosea',                  dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Preferal WG':            { type:'Biyolojik',  active:'Isaria fumosorosea',                  dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Botanigard 22 WP':       { type:'Biyolojik',  active:'Beauveria bassiana',                  dose:'1.0',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Celarix SC':             { type:'Biyolojik',  active:'Clonostachys rosea',                  dose:'1.0',  unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Rhino WP':               { type:'Biyolojik',  active:'Trichoderma harzianum',               dose:'2',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Trichodex WP':           { type:'Biyolojik',  active:'Trichoderma harzianum',               dose:'2',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Tusal WG':               { type:'Biyolojik',  active:'Trichoderma asperellum + gamsii',     dose:'2',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Rootshield WP':          { type:'Biyolojik',  active:'Trichoderma harzianum',               dose:'2',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Remedier WG':            { type:'Biyolojik',  active:'Trichoderma asperellum + gamsii',     dose:'2',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Trianum WP':             { type:'Biyolojik',  active:'Trichoderma harzianum',               dose:'2',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Prestop WP':             { type:'Biyolojik',  active:'Gliocladium catenulatum',             dose:'2',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Contans WG':             { type:'Biyolojik',  active:'Coniothyrium minitans',               dose:'2',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Botector WG':            { type:'Biyolojik',  active:'Aureobasidium pullulans',             dose:'1',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Serenade ASO':           { type:'Biyolojik',  active:'Bacillus subtilis',                   dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Serenade Max WP':        { type:'Biyolojik',  active:'Bacillus subtilis',                   dose:'2',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Rhapsody ASO':           { type:'Biyolojik',  active:'Bacillus subtilis',                   dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Taegro WG':              { type:'Biyolojik',  active:'Bacillus subtilis amyloliquefaciens', dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Cease SC':               { type:'Biyolojik',  active:'Bacillus subtilis',                   dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Sonata ASO':             { type:'Biyolojik',  active:'Bacillus pumilus',                    dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Amylo-X WG':             { type:'Biyolojik',  active:'Bacillus amyloliquefaciens',          dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'RhizoVital 42 WP':       { type:'Biyolojik',  active:'Bacillus amyloliquefaciens FZB42',    dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'NeemAzal-T/S EC':        { type:'Biyolojik',  active:'Azadirachtin',                        dose:'3',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Neemix 4.5 EC':          { type:'Biyolojik',  active:'Azadirachtin',                        dose:'3',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Align EC':               { type:'Biyolojik',  active:'Azadirachtin',                        dose:'3',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Pyreval EC':             { type:'Biyolojik',  active:'Pyrethrin',                           dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Pyrethrum Dazer EC':     { type:'Biyolojik',  active:'Pyrethrin',                           dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Spruzit EC':             { type:'Biyolojik',  active:'Pyrethrin + Piperonyl butoxide',      dose:'3',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Natural 180 EC':         { type:'Biyolojik',  active:'Pyrethrin + Azadirachtin',            dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Flipper SC':             { type:'Biyolojik',  active:'Yağ Asitleri',                        dose:'3',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Requiem EC':             { type:'Biyolojik',  active:'Chenopodium ambrosioides özü',        dose:'3',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Nemasys WP':             { type:'Biyolojik',  active:'Steinernema feltiae',                 dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Entonem WP':             { type:'Biyolojik',  active:'Steinernema feltiae',                 dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Larvanem WP':            { type:'Biyolojik',  active:'Heterorhabditis bacteriophora',       dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Capsanem WP':            { type:'Biyolojik',  active:'Steinernema carpocapsae',             dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Dilemma WP':             { type:'Biyolojik',  active:'Heterorhabditis megidis',             dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Ecomask WP':             { type:'Biyolojik',  active:'Steinernema kraussei',                dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Terranova Plus WP':      { type:'Biyolojik',  active:'Steinernema carpocapsae',             dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Nemitz WP':              { type:'Biyolojik',  active:'Steinernema feltiae',                 dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Exhibit WP':             { type:'Biyolojik',  active:'Steinernema carpocapsae',             dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'BIO-TAK WP':             { type:'Biyolojik',  active:'Steinernema feltiae',                 dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Azoter WP':              { type:'Biyolojik',  active:'Azotobacter chroococcum',             dose:'2',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'JumpStart WS':           { type:'Biyolojik',  active:'Penicillium bilaiae',                 dose:'1',    unit:'gr',    base:'dekar', method:'Toprak' },
+  'Nativo Bio WP':          { type:'Biyolojik',  active:'Bacillus subtilis + Tebuconazole',    dose:'1.5',  unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Stimplex SL':            { type:'Biyolojik',  active:'Ascophyllum nodosum Özü',             dose:'2',    unit:'ml/cc', base:'100L',  method:'Yapraktan' },
+  'Lalstop G77 WG':         { type:'Biyolojik',  active:'Aureobasidium pullulans',             dose:'1',    unit:'gr',    base:'100L',  method:'Yapraktan' },
+  'Thripobugline WP':       { type:'Biyolojik',  active:'Amblyseius cucumeris',                dose:'0.5',  unit:'gr',    base:'dekar', method:'Yapraktan' },
+};
+
+// ─── SETUP ───
+function setupPrescription() {
+  const today = new Date();
+  const d = String(today.getDate()).padStart(2, '0');
+  const m = String(today.getMonth() + 1).padStart(2, '0');
+  const y = String(today.getFullYear()).slice(2);
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const recNo = `REC-${d}${m}${y}-${rand}`;
+  document.getElementById('rec-no-display').textContent = recNo;
+  document.getElementById('success-rec-no').textContent = recNo;
+  state.recNo = recNo;
+
+  // Tanı alanı varsayılanı
+  const diagEl = document.getElementById('pr-diagnosis');
+  if (!diagEl.value) diagEl.value = 'Normal';
+
+  // Takip tarihi: +14 gün
+  const fup = new Date();
+  fup.setDate(fup.getDate() + 14);
+  document.getElementById('pr-followup').value = fup.toISOString().split('T')[0];
+
+  // Dikim tarihi göstergesi
+  const pdEl = document.getElementById('sel-gh-plantdate2');
+  if (pdEl && state.greenhouse.plantDate) {
+    const planted = new Date(state.greenhouse.plantDate);
+    const days = Math.floor((today - planted) / 86400000);
+    const dateStr = planted.toLocaleDateString('tr-TR');
+    pdEl.innerHTML = `${dateStr} <span style="background:var(--accent);color:#fff;font-size:13px;font-weight:800;padding:3px 10px;border-radius:20px;margin-left:6px;vertical-align:middle;">${days} gün</span>`;
+  }
+
+  // Başlangıçta bir sulama dönemi aç
+  if (state.periods.length === 0) {
+    state.periodCount = 0;
+    document.getElementById('periods-container').innerHTML = '';
+    addPeriod();
+  }
+}
+
+// ─── SULAMA DÖNEMİ EKLE ───
+function addPeriod() {
+  state.periodCount++;
+  const pc = state.periodCount;
+  const container = document.getElementById('periods-container');
+  const div = document.createElement('div');
+  div.className = 'period-block';
+  div.id = `period-block-${pc}`;
+  div.innerHTML = `
+    <div class="period-header">
+      <span class="period-title">💧 ${pc}. Sulama Dönemi</span>
+      ${pc > 1 ? `<button class="btn danger" style="padding:4px 10px;font-size:11px;" onclick="removePeriod(${pc})">✕ Dönemi Sil</button>` : ''}
+    </div>
+    <table class="period-table">
+      <thead>
+        <tr>
+          <th style="min-width:160px;">Gübre / İlaç</th>
+          <th>Tür</th>
+          <th>Etken Madde</th>
+          <th style="width:140px;">Doz / Birim / Baz</th>
+          <th style="width:90px;">Sera Toplam</th>
+          <th>Uygulama</th>
+          <th style="width:36px;"></th>
+        </tr>
+      </thead>
+      <tbody id="period-body-${pc}"></tbody>
+    </table>
+    <div class="period-footer" id="period-footer-${pc}">
+      <button class="btn" style="font-size:12px;color:var(--accent);border-color:var(--accent-light);background:var(--accent-light);"
+              onclick="addMedRow(${pc})">+ İlaç / Gübre Ekle</button>
+    </div>`;
+  container.appendChild(div);
+  addMedRow(pc);
+  state.periods.push({ id: pc, rows: [] });
+}
+
+function removePeriod(pc) {
+  document.getElementById(`period-block-${pc}`)?.remove();
+}
+
+// ─── YARDIMCI FONKSİYONLAR ───
+function medNamesForType(type) {
+  return Object.keys(MEDICINE_DB).filter(k => !type || MEDICINE_DB[k].type === type);
+}
+
+function updateMedDatalist(rowId, type) {
+  const dl = document.getElementById(`dl-${rowId}`);
+  if (!dl) return;
+  dl.innerHTML = medNamesForType(type).map(n => `<option value="${n}">`).join('');
+}
+
+function updateActiveDatalist(rowId, type) {
+  const dl = document.getElementById(`dla-${rowId}`);
+  if (!dl) return;
+  const actives = [...new Set(medNamesForType(type).map(n => MEDICINE_DB[n].active))];
+  dl.innerHTML = actives.map(a => `<option value="${a}">`).join('');
+}
+
+// ─── İLAÇ SATIRI EKLE ───
+function addMedRow(pc) {
+  const tbody = document.getElementById(`period-body-${pc}`);
+  if (!tbody) return;
+  const rowId = `med-${pc}-${Date.now()}`;
+  const tr = document.createElement('tr');
+  tr.id = rowId;
+  tr.innerHTML = `
+    <td style="min-width:160px;">
+      <div style="display:flex;gap:3px;align-items:center;">
+        <input class="form-control med-name" style="padding:5px 8px;flex:1;" placeholder="İlaç/gübre adı…"
+               list="dl-${rowId}" oninput="autoFillMed(this,'${rowId}')">
+        <button type="button" class="clr-btn" onclick="clearMedRow('${rowId}')" title="Tümünü temizle">✕</button>
+      </div>
+      <datalist id="dl-${rowId}"></datalist>
+    </td>
+    <td>
+      <div style="display:flex;gap:2px;align-items:center;">
+        <select class="form-control med-type" style="padding:5px 6px;width:90px;"
+                onchange="onTypeChange(this,'${rowId}')">
+          <option value="">— Tür —</option>
+          <option>Fungisit</option>
+          <option>İnsektisit</option>
+          <option>Akarisit</option>
+          <option>Herbisit</option>
+          <option>Gübre</option>
+          <option>Biyolojik</option>
+        </select>
+        <button type="button" class="clr-btn" onclick="clearMedType('${rowId}')" title="Türü temizle">✕</button>
+      </div>
+    </td>
+    <td>
+      <div style="display:flex;gap:2px;align-items:center;">
+        <input class="form-control med-active" style="padding:5px 6px;flex:1;" placeholder="Etken madde"
+               list="dla-${rowId}" oninput="onActiveInput(this,'${rowId}')">
+        <button type="button" class="clr-btn" onclick="clearMedActive('${rowId}')" title="Etken maddeyi temizle">✕</button>
+      </div>
+      <datalist id="dla-${rowId}"></datalist>
+    </td>
+    <td>
+      <div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap;">
+        <input class="form-control med-dose" style="padding:5px 6px;width:52px;" placeholder="—"
+               oninput="calcSeraTotal('${rowId}')"
+               onfocus="this.value='';const h=document.getElementById('std-hint-${rowId}');if(h)h.style.display='none'"
+               onblur="if(!this.value&&this.placeholder&&this.placeholder!=='—'){this.value=this.placeholder}">
+        <select class="form-control med-unit" style="padding:4px 3px;width:46px;font-size:11px;"
+                onchange="calcSeraTotal('${rowId}')">
+          <option>ml/cc</option>
+          <option>gr</option>
+          <option>L</option>
+          <option>kg</option>
+        </select>
+        <select class="form-control med-base" style="padding:4px 3px;width:100px;font-size:10px;color:var(--muted);"
+                onchange="calcSeraTotal('${rowId}')">
+          <option value="100L">/ 100 L suya</option>
+          <option value="1000L">/ ton suya</option>
+          <option value="dekar">/ dekar</option>
+          <option value="m2">/ m²</option>
+          <option value="sabit">sabit miktar</option>
+        </select>
+      </div>
+      <div id="std-hint-${rowId}" style="display:none;font-size:9px;color:#aaa;margin-top:2px;"></div>
+    </td>
+    <td>
+      <input class="form-control med-total" style="padding:5px 8px;width:90px;background:#f9fafb;"
+             placeholder="—" readonly>
+    </td>
+    <td>
+      <select class="form-control med-method" style="padding:5px 8px;width:110px;">
+        <option>Yapraktan</option>
+        <option>Damla</option>
+        <option>Sulama Suyu</option>
+        <option>Toprak</option>
+      </select>
+    </td>
+    <td>
+      <button class="btn danger" style="padding:3px 8px;font-size:11px;"
+              onclick="this.closest('tr').remove()">✕</button>
+    </td>`;
+  tbody.appendChild(tr);
+  updateMedDatalist(rowId, '');
+  updateActiveDatalist(rowId, '');
+}
+
+// ─── OLAY YÖNETİCİLERİ ───
+
+// Tür değişince: ilaç ve etken madde listelerini filtrele, alanları temizle
+function onTypeChange(selectEl, rowId) {
+  const type = selectEl.value;
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+  updateMedDatalist(rowId, type);
+  updateActiveDatalist(rowId, type);
+  tr.querySelector('.med-name').value   = '';
+  tr.querySelector('.med-active').value = '';
+  tr.querySelector('.med-dose').value   = '';
+  tr.querySelector('.med-total').value  = '—';
+  const hint = document.getElementById(`std-hint-${rowId}`);
+  if (hint) hint.style.display = 'none';
+  flash(selectEl);
+}
+
+// Etken madde girilince: eşleşen ilacı bul ve diğer alanları otomatik doldur
+function onActiveInput(input, rowId) {
+  const active = input.value.trim();
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+  const filterType = tr.querySelector('.med-type').value || '';
+  const match = Object.entries(MEDICINE_DB).find(([n, m]) =>
+    m.active === active && (!filterType || m.type === filterType)
+  );
+  if (match) {
+    const [name, med] = match;
+    tr.querySelector('.med-name').value = name;
+    applyMed(rowId, med);
+  }
+}
+
+// İlaç adı girilince: veritabanından bilgileri otomatik doldur
+function autoFillMed(input, rowId) {
+  const name = input.value.trim();
+  const med = MEDICINE_DB[name];
+  if (med) applyMed(rowId, med);
+  calcSeraTotal(rowId);
+}
+
+// Veritabanı kaydını satıra uygula
+function applyMed(rowId, med) {
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+  const typeEl   = tr.querySelector('.med-type');
+  const activeEl = tr.querySelector('.med-active');
+  const doseEl   = tr.querySelector('.med-dose');
+  const unitEl   = tr.querySelector('.med-unit');
+  const baseEl   = tr.querySelector('.med-base');
+  const methodEl = tr.querySelector('.med-method');
+  const hintEl   = document.getElementById(`std-hint-${rowId}`);
+
+  Array.from(typeEl.options).forEach((o, i) => { if (o.text === med.type) typeEl.selectedIndex = i; });
+  activeEl.value     = med.active;
+  doseEl.value       = med.dose;
+  doseEl.placeholder = med.dose;
+  doseEl.title       = `Standart doz: ${med.dose} ${med.unit}`;
+
+  if (unitEl) Array.from(unitEl.options).forEach((o, i) => { if (o.value === med.unit || o.text === med.unit) unitEl.selectedIndex = i; });
+  if (baseEl) baseEl.value = med.base || '100L';
+  Array.from(methodEl.options).forEach((o, i) => { if (o.text === med.method) methodEl.selectedIndex = i; });
+
+  const baseLabel = baseEl ? baseEl.options[baseEl.selectedIndex]?.text : '100 L';
+  if (hintEl) { hintEl.textContent = `std: ${med.dose} ${med.unit} / ${baseLabel}`; hintEl.style.display = 'block'; }
+
+  updateMedDatalist(rowId, med.type);
+  updateActiveDatalist(rowId, med.type);
+  [typeEl, activeEl, doseEl, unitEl, methodEl].forEach(flash);
+  calcSeraTotal(rowId);
+}
+
+function clearMedRow(rowId) {
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+  tr.querySelector('.med-name').value   = '';
+  tr.querySelector('.med-active').value = '';
+  tr.querySelector('.med-dose').value   = '';
+  tr.querySelector('.med-total').value  = '—';
+  const typeEl = tr.querySelector('.med-type');
+  if (typeEl) typeEl.selectedIndex = 0;
+  const hintEl = document.getElementById('std-hint-' + rowId);
+  if (hintEl) hintEl.style.display = 'none';
+  updateMedDatalist(rowId, '');
+  updateActiveDatalist(rowId, '');
+  tr.querySelector('.med-name').focus();
+}
+
+function clearMedType(rowId) {
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+  const typeEl = tr.querySelector('.med-type');
+  if (typeEl) typeEl.selectedIndex = 0;
+  updateMedDatalist(rowId, '');
+  updateActiveDatalist(rowId, '');
+}
+
+function clearMedActive(rowId) {
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+  const el = tr.querySelector('.med-active');
+  if (el) { el.value = ''; el.focus(); }
+}
+
+// Yeşil flash animasyonu (otomatik doldurma geri bildirimi)
+function flash(el) {
+  if (!el) return;
+  el.style.background = '#f0faf4';
+  setTimeout(() => el.style.background = '', 1200);
+}
+
+// ─── SERA TOPLAM HESAPLA ───
+// Su hacmi tahmini: 0.8 L/m²
+function calcSeraTotal(rowId) {
+  const tr = document.getElementById(rowId);
+  if (!tr) return;
+  const dose    = parseFloat(tr.querySelector('.med-dose')?.value);
+  const baseEl  = tr.querySelector('.med-base');
+  const base    = baseEl ? baseEl.value : '100L';
+  const unitEl  = tr.querySelector('.med-unit');
+  const unit    = unitEl ? unitEl.value : 'ml';
+  const totalEl = tr.querySelector('.med-total');
+  if (!totalEl) return;
+
+  const areaRaw   = state.greenhouse?.area || '';
+  const areaSm    = parseFloat(areaRaw.replace(/\./g, '').replace(',', '.')) || 0; // m²
+  const areaDekar = areaSm / 1000; // 1 dekar = 1000 m²
+
+  if (!dose || !areaSm) { totalEl.value = '—'; return; }
+
+  const totalWaterL = areaSm * 0.8; // toplam su hacmi (L)
+
+  let total = 0;
+  switch (base) {
+    case '100L':  total = dose * (totalWaterL / 100); break;
+    case '1000L': total = dose * (totalWaterL / 1000); break;
+    case 'dekar': total = dose * areaDekar; break;
+    case 'm2':    total = dose * areaSm; break;
+    case 'sabit': total = dose; break;
+    default:      total = dose * (totalWaterL / 100);
+  }
+
+  const isWeight = ['gr', 'kg'].includes(unit);
+  let display = '';
+  if (isWeight) {
+    display = total >= 1000 ? (total / 1000).toFixed(2) + ' kg' : total.toFixed(1) + ' gr';
+  } else {
+    display = total >= 1000 ? (total / 1000).toFixed(2) + ' L' : total.toFixed(1) + ' ml/cc';
+  }
+  totalEl.value = display;
+}
+
+// ─── KAYDET & BİTİR ───
+function saveAndFinish() {
+  const diagEl = document.getElementById('pr-diagnosis');
+  if (!diagEl.value.trim()) diagEl.value = 'Normal';
+  document.getElementById('success-desc').textContent =
+    `${state.farmer.name} — ${state.greenhouse.name} için reçete oluşturuldu.`;
+  showStep(4);
+}
+
+function showStep(n) {
+  document.querySelectorAll('.step-view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`step-${n}`)?.classList.add('active');
+}
+
+function resetForm() {
+  state.periods = [];
+  state.periodCount = 0;
+  document.getElementById('periods-container').innerHTML = '';
+  document.getElementById('pr-diagnosis').value = '';
+  document.getElementById('pr-notes').value = '';
+  showStep(3);
+  setupPrescription();
+}
+
+// ─── PDF MODALİ ───
+function openPdfModal() {
+  const gh     = state.greenhouse;
+  const farmer = state.farmer;
+  const diag   = document.getElementById('pr-diagnosis')?.value || '—';
+  const recNo  = state.recNo || 'REC-AUTO';
+  const today  = new Date().toLocaleDateString('tr-TR');
+
+  // Dönem tablolarını topla
+  let periodsHtml = '';
+  for (let i = 1; i <= state.periodCount; i++) {
+    const tbody = document.getElementById(`period-body-${i}`);
+    if (!tbody) continue;
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    if (!rows.length) continue;
+    let rowsHtml = rows.map(r => {
+      const cells = r.querySelectorAll('input, select');
+      const vals  = Array.from(cells).map(c => c.value || '—');
+      // vals: [0]=ad, [1]=doz, [2]=birim, [3]=baz, [4]=toplam, [5]=uygulama
+      return `<tr>
+        <td>${vals[0]}</td>
+        <td>${vals[1]} ${vals[2]} ${vals[3]}</td>
+        <td>${vals[4]}</td>
+        <td>${vals[5]}</td>
+      </tr>`;
+    }).join('');
+    periodsHtml += `
+      <div style="font-weight:700;font-size:11px;margin-bottom:4px;color:var(--accent);">💧 ${i}. Sulama Dönemi</div>
+      <table class="rec-tbl">
+        <thead><tr><th>İlaç/Gübre</th><th>Doz</th><th>Sera Toplam</th><th>Uygulama</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>`;
+  }
+  if (!periodsHtml) periodsHtml = '<div style="color:#aaa;font-size:12px;padding:10px 0;">Sulama dönemi eklenmedi.</div>';
+
+  document.getElementById('pdf-preview-content').innerHTML = `
+    <div class="recete-hdr">
+      <div style="font-size:14px;font-weight:800;margin-bottom:6px;">🌿 SERA REÇETESİ</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;">
+        <div><b>Reçete No:</b> ${recNo}</div>
+        <div><b>Tarih:</b> ${today}</div>
+        <div><b>Çiftçi:</b> ${farmer.name}</div>
+        <div><b>Tel:</b> ${farmer.phone || '—'}</div>
+        <div><b>Sera:</b> ${gh.name}</div>
+        <div><b>Alan:</b> ${gh.area} m²</div>
+        <div><b>Ürün:</b> ${gh.crop || '—'}</div>
+        <div><b>Takip:</b> ${document.getElementById('pr-followup')?.value || '—'}</div>
+      </div>
+    </div>
+    <div style="background:#fef2f2;padding:8px;border-radius:6px;font-size:11px;margin-bottom:12px;border-left:3px solid #ef4444;">
+      <b>Tanı:</b> ${diag}
+    </div>
+    ${periodsHtml}
+    <div style="border-top:1px solid #e5e7eb;margin-top:12px;padding-top:8px;font-size:10px;color:#888;display:flex;justify-content:space-between;">
+      <span>Ziraat Mühendisi: Ahmet Yılmaz</span>
+      <span>İmza: ________________</span>
+    </div>`;
+
+  document.getElementById('pdf-modal').classList.add('open');
+}
+
+function closePdf() {
+  document.getElementById('pdf-modal').classList.remove('open');
+}
+
+// ─── BAŞLAT ───
+setupPrescription();
+</script>
+</body>
+</html>

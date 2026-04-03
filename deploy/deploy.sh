@@ -1,0 +1,70 @@
+#!/bin/bash
+# Ondur — VPS Deployment Script
+# Ubuntu 22.04 LTS için
+# Kullanım: bash deploy.sh
+
+set -e
+
+DOMAIN="ondur.com"
+APP_DIR="/var/www/ondur"
+REPO="https://github.com/KULLANICI_ADI/ondur.git"  # kendi reponuzu yazın
+
+echo "=== [1/8] Sistem paketleri ==="
+apt-get update -q
+apt-get install -y python3.12 python3.12-venv python3-pip \
+    postgresql postgresql-contrib nginx certbot python3-certbot-nginx \
+    nodejs npm git
+
+echo "=== [2/8] PostgreSQL ==="
+sudo -u postgres psql <<SQL
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ondur') THEN
+    CREATE USER ondur WITH PASSWORD '$(grep DB_PASSWORD /var/www/ondur/.env | cut -d= -f2)';
+  END IF;
+END
+\$\$;
+CREATE DATABASE ondur OWNER ondur;
+SQL
+
+echo "=== [3/8] Uygulama dizini ==="
+mkdir -p $APP_DIR /var/log/ondur
+git clone $REPO $APP_DIR || (cd $APP_DIR && git pull)
+
+echo "=== [4/8] Python ortamı ==="
+cd $APP_DIR
+python3.12 -m venv venv
+venv/bin/pip install --upgrade pip
+venv/bin/pip install -r requirements.txt
+
+echo "=== [5/8] Django ==="
+# .env dosyasını manuel oluşturmanız gerekiyor:
+# cp .env.example .env && nano .env
+venv/bin/python manage.py migrate --no-input
+venv/bin/python manage.py collectstatic --no-input
+venv/bin/python manage.py createsuperuser --no-input || true
+
+echo "=== [6/8] Frontend build ==="
+cd $APP_DIR/frontend
+npm ci
+VITE_API_URL=https://$DOMAIN npm run build
+
+echo "=== [7/8] Nginx + SSL ==="
+cp $APP_DIR/deploy/nginx.conf /etc/nginx/sites-available/ondur
+ln -sf /etc/nginx/sites-available/ondur /etc/nginx/sites-enabled/ondur
+rm -f /etc/nginx/sites-enabled/default
+nginx -t
+certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos -m admin@$DOMAIN
+systemctl reload nginx
+
+echo "=== [8/8] Servis ==="
+cp $APP_DIR/deploy/ondur.service /etc/systemd/system/ondur.service
+chown -R www-data:www-data $APP_DIR /var/log/ondur
+systemctl daemon-reload
+systemctl enable ondur
+systemctl restart ondur
+
+echo ""
+echo "✓ Deployment tamamlandı: https://$DOMAIN"
+echo ""
+echo "Loglar: journalctl -u ondur -f"

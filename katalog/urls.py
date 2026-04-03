@@ -12,6 +12,7 @@ urlpatterns = [
     path('uretici/ilaclarim/', views.UreticiIlacListView.as_view(), name='uretici-ilac-list'),
     path('uretici/ilaclarim/<int:pk>/', views.UreticiIlacGuncelleView.as_view(), name='uretici-ilac-guncelle'),
     path('uretici/gubrelerim/', views.UreticiGubreListView.as_view(), name='uretici-gubre-list'),
+    path('uretici/gubrelerim/<int:pk>/', views.UreticiGubreGuncelleView.as_view(), name='uretici-gubre-guncelle'),
 
     # Bayii
     path('bayii/urunlerim/', views.BayiiUrunListView.as_view(), name='bayii-urun-list'),

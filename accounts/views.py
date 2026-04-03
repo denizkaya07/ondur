@@ -1,12 +1,18 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import Kullanici
-from .serializers import KayitSerializer, KullaniciSerializer
+from .serializers import KayitSerializer, KullaniciSerializer, TelefonTokenSerializer
+
+
+class TelefonGirisView(TokenObtainPairView):
+    serializer_class = TelefonTokenSerializer
 
 
 class KayitView(generics.CreateAPIView):
-    queryset         = Kullanici.objects.all()
-    serializer_class = KayitSerializer
+    queryset           = Kullanici.objects.all()
+    serializer_class   = KayitSerializer
     permission_classes = [permissions.AllowAny]
 
 
@@ -24,3 +30,18 @@ class ProfilGuncelleView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class SifreDegistirView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        eski  = request.data.get('eski_sifre', '')
+        yeni  = request.data.get('yeni_sifre', '')
+        if not request.user.check_password(eski):
+            return Response({'eski_sifre': 'Mevcut şifre yanlış.'}, status=status.HTTP_400_BAD_REQUEST)
+        if len(yeni) < 8:
+            return Response({'yeni_sifre': 'Şifre en az 8 karakter olmalıdır.'}, status=status.HTTP_400_BAD_REQUEST)
+        request.user.set_password(yeni)
+        request.user.save()
+        return Response({'detail': 'Şifre güncellendi.'})

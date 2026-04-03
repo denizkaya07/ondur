@@ -42,9 +42,13 @@ class ReceteListView(generics.ListCreateAPIView):
         return ReceteKisaSerializer
 
     def get_queryset(self):
-        return Recete.objects.filter(
+        qs = Recete.objects.filter(
             muhendis=self.request.user
         ).select_related('isletme__ciftci').order_by('-olusturma')
+        isletme_id = self.request.query_params.get('isletme')
+        if isletme_id:
+            qs = qs.filter(isletme_id=isletme_id)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(muhendis=self.request.user)
