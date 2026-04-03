@@ -179,6 +179,30 @@ class Isletme(models.Model):
         ]
 
 
+class IsletmeFotograf(models.Model):
+    isletme   = models.ForeignKey(
+                    Isletme,
+                    related_name='fotograflar',
+                    on_delete=models.CASCADE
+                )
+    yukleyen  = models.ForeignKey(
+                    'accounts.Kullanici',
+                    on_delete=models.SET_NULL,
+                    null=True
+                )
+    fotograf  = models.ImageField(upload_to='isletme_fotograflar/%Y/%m/')
+    aciklama  = models.CharField(max_length=200, blank=True)
+    olusturma = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = 'İşletme Fotoğrafı'
+        verbose_name_plural = 'İşletme Fotoğrafları'
+        ordering            = ['-olusturma']
+
+    def __str__(self):
+        return f'{self.isletme.ad} — {self.olusturma:%Y-%m-%d}'
+
+
 class ToprakAnaliz(models.Model):
     isletme      = models.ForeignKey(
                        Isletme,

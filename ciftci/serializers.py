@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Ciftci, Isletme, Urun, UrunCesit, MuhendisIsletme, ToprakAnaliz
+from .models import Ciftci, Isletme, Urun, UrunCesit, MuhendisIsletme, ToprakAnaliz, IsletmeFotograf
 
 
 class UrunSerializer(serializers.ModelSerializer):
@@ -90,6 +90,16 @@ class MuhendisIsletmeSerializer(serializers.ModelSerializer):
     class Meta:
         model  = MuhendisIsletme
         fields = ['id', 'isletme', 'muhendis_ad', 'ciftci_ad', 'ciftci_soyad', 'ciftci_mahalle', 'ciftci_ilce', 'ciftci_il', 'ciftci_cks_no', 'ciftci_telefon', 'durum', 'talep_tarihi', 'yanit_tarihi']
+
+class IsletmeFotografSerializer(serializers.ModelSerializer):
+    yukleyen_ad = serializers.CharField(source='yukleyen.get_full_name', read_only=True)
+    yukleyen_rol = serializers.CharField(source='yukleyen.rol', read_only=True)
+
+    class Meta:
+        model  = IsletmeFotograf
+        fields = ['id', 'fotograf', 'aciklama', 'yukleyen_ad', 'yukleyen_rol', 'olusturma']
+        read_only_fields = ['yukleyen_ad', 'yukleyen_rol', 'olusturma']
+
 
 class ToprakAnalizSerializer(serializers.ModelSerializer):
     class Meta:

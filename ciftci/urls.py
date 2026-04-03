@@ -21,4 +21,6 @@ urlpatterns = [
     path('bayii/talep/',        views.CiftciBayiiTalepView.as_view(),  name='ciftci-bayii-talep'),
     path('bayii/yanit/<int:pk>/', views.CiftciBayiiYanitView.as_view(), name='ciftci-bayii-yanit'),
     path('isletme/<int:isletme_id>/toprak-analiz/', views.ToprakAnalizListView.as_view(), name='toprak-analiz'),
+    path('isletme/<int:isletme_id>/fotograflar/', views.IsletmeFotografListView.as_view(), name='isletme-fotograflar'),
+    path('isletme/<int:isletme_id>/fotograflar/<int:pk>/', views.IsletmeFotografSilView.as_view(), name='isletme-fotograf-sil'),
 ]

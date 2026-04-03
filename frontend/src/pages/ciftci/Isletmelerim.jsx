@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import { AuthContext } from '../../context/AuthContext'
+import IsletmeFotografPanel from '../../components/IsletmeFotografPanel'
 
 const URUN_EMOJI = {
   domates:'🩷', cherry:'🍒', biber:'🫑', patlican:'🍆',
@@ -48,6 +49,7 @@ export default function Isletmelerim() {
   const [yukleniyor, setYukleniyor] = useState(true)
   const [secili, setSecili]         = useState(null)
   const [toprakAnalizler, setToprakAnalizler] = useState({})
+  const [fotografAcik, setFotografAcik] = useState(null)
   const [formAcik, setFormAcik]     = useState(false)
   const [kaydediyor, setKaydediyor] = useState(false)
   const [hata, setHata]             = useState('')
@@ -284,6 +286,23 @@ export default function Isletmelerim() {
                   }
                 </div>
               )}
+
+              {/* Fotoğraf butonu + panel */}
+              <div style={{padding:'0 0 4px'}}>
+                <button
+                  style={{...s.analizYok, background:'none', border:'none', cursor:'pointer', color:'#1a7a4a', fontSize:'0.85rem', padding:'6px 0'}}
+                  onClick={e => { e.stopPropagation(); setFotografAcik(fotografAcik === i.id ? null : i.id) }}
+                >
+                  📷 Fotoğraflar {fotografAcik === i.id ? '▲' : '▼'}
+                </button>
+                {fotografAcik === i.id && (
+                  <IsletmeFotografPanel
+                    isletmeId={i.id}
+                    canUpload={true}
+                    onKapat={() => setFotografAcik(null)}
+                  />
+                )}
+              </div>
             </div>
           ))}
         </div>

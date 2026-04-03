@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import { AuthContext } from '../../context/AuthContext'
+import IsletmeFotografPanel from '../../components/IsletmeFotografPanel'
 
 function ReceteDetayIcerik({ recete }) {
   const adimlar = recete.adimlar || []
@@ -79,6 +80,7 @@ export default function Danisanlar() {
   const [acikCiftci, setAcikCiftci]     = useState(null)
   const [gecmisIsletme, setGecmisIsletme] = useState(null)
   const [gecmisReceteler, setGecmisReceteler] = useState({})
+  const [fotografIsletme, setFotografIsletme] = useState(null)
   const [acikRecete, setAcikRecete] = useState(null)     // { id, data|null }
   const [receteDetay, setReceteDetay] = useState({})
 
@@ -342,13 +344,29 @@ export default function Danisanlar() {
                                 {isl.enlem && isl.boylam && <>{' '}<a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={s.gpsLink}>📍 GPS</a></>}
                               </p>
                             </div>
-                            <button
-                              style={{...s.gecmisBtn, ...(gecmisIsletme === isl.id ? s.gecmisBtnAcik : {})}}
-                              onClick={e => gecmisToggle(e, isl.id)}
-                            >
-                              📋 Geçmiş Reçeteler
-                            </button>
+                            <div style={{display:'flex',flexDirection:'column',gap:'5px',flexShrink:0}}>
+                              <button
+                                style={{...s.gecmisBtn, ...(gecmisIsletme === isl.id ? s.gecmisBtnAcik : {})}}
+                                onClick={e => gecmisToggle(e, isl.id)}
+                              >
+                                📋 Geçmiş Reçeteler
+                              </button>
+                              <button
+                                style={{...s.gecmisBtn, ...(fotografIsletme === isl.id ? s.gecmisBtnAcik : {})}}
+                                onClick={e => { e.stopPropagation(); setFotografIsletme(fotografIsletme === isl.id ? null : isl.id) }}
+                              >
+                                📷 Fotoğraflar
+                              </button>
+                            </div>
                           </div>
+
+                          {fotografIsletme === isl.id && (
+                            <IsletmeFotografPanel
+                              isletmeId={isl.id}
+                              canUpload={true}
+                              onKapat={() => setFotografIsletme(null)}
+                            />
+                          )}
 
                           {gecmisIsletme === isl.id && (
                             <div style={s.gecmisPanel}>

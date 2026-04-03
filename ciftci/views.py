@@ -5,12 +5,13 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ondur.permissions import IsMuhendis, IsCiftci
-from .models import Ciftci, Isletme, MuhendisIsletme, Urun, UrunCesit, CiftciBayii, ToprakAnaliz
+from .models import Ciftci, Isletme, MuhendisIsletme, Urun, UrunCesit, CiftciBayii, ToprakAnaliz, IsletmeFotograf
 from .serializers import (
     CiftciSerializer, CiftciKisaSerializer,
     IsletmeSerializer, MuhendisIsletmeSerializer,
     UrunSerializer, UrunCesitSerializer,
-    CiftciBayiiSerializer, ToprakAnalizSerializer
+    CiftciBayiiSerializer, ToprakAnalizSerializer,
+    IsletmeFotografSerializer
 )
 from katalog.models import Bayii
 
@@ -206,3 +207,35 @@ class ToprakAnalizListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(isletme_id=self.kwargs['isletme_id'])
+
+
+def _isletme_erisim_kontrol(user, isletme):
+    if user.rol == 'ciftci':
+        get_object_or_404(Ciftci, kullanici=user, isletmeler=isletme)
+    elif user.rol == 'muhendis':
+        get_object_or_404(MuhendisIsletme, muhendis=user, isletme=isletme)
+
+
+class IsletmeFotografListView(generics.ListCreateAPIView):
+    serializer_class   = IsletmeFotografSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        isletme = get_object_or_404(Isletme, pk=self.kwargs['isletme_id'])
+        _isletme_erisim_kontrol(self.request.user, isletme)
+        return IsletmeFotograf.objects.filter(isletme=isletme)
+
+    def perform_create(self, serializer):
+        isletme = get_object_or_404(Isletme, pk=self.kwargs['isletme_id'])
+        _isletme_erisim_kontrol(self.request.user, isletme)
+        serializer.save(isletme=isletme, yukleyen=self.request.user)
+
+
+class IsletmeFotografSilView(generics.DestroyAPIView):
+    serializer_class   = IsletmeFotografSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        isletme = get_object_or_404(Isletme, pk=self.kwargs['isletme_id'])
+        _isletme_erisim_kontrol(self.request.user, isletme)
+        return IsletmeFotograf.objects.filter(isletme=isletme)
