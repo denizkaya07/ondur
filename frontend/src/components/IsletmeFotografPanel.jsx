@@ -68,10 +68,9 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
           {fotograflar.map(f => (
             <div key={f.id} style={s.thumb}>
               <img
-                src={f.fotograf}
+                src={f.fotograf?.replace('http://', 'https://')}
                 alt={f.aciklama || ''}
                 style={s.img}
-                loading="lazy"
                 onClick={() => setBuyuk(f)}
               />
               <div style={s.thumbAlt}>
@@ -88,7 +87,7 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
       {/* Lightbox — body'e portal ile render edilir, z-index sorununu önler */}
       {buyuk && createPortal(
         <div style={s.lightbox} onClick={() => setBuyuk(null)}>
-          <img src={buyuk.fotograf} alt="" style={s.lightboxImg} onClick={e => e.stopPropagation()} />
+          <img src={buyuk.fotograf?.replace('http://', 'https://')} alt="" style={s.lightboxImg} onClick={e => e.stopPropagation()} />
           <button style={s.lightboxKapat} onClick={() => setBuyuk(null)}>✕</button>
         </div>,
         document.body
