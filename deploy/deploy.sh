@@ -5,9 +5,9 @@
 
 set -e
 
-DOMAIN="ondur.com"
+DOMAIN="onduran.com.tr"
 APP_DIR="/var/www/ondur"
-REPO="https://github.com/KULLANICI_ADI/ondur.git"  # kendi reponuzu yazın
+REPO="https://github.com/denizkaya07/ondur.git"
 
 echo "=== [1/8] Sistem paketleri ==="
 apt-get update -q
@@ -54,7 +54,7 @@ cp $APP_DIR/deploy/nginx.conf /etc/nginx/sites-available/ondur
 ln -sf /etc/nginx/sites-available/ondur /etc/nginx/sites-enabled/ondur
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
-certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos -m admin@$DOMAIN
+certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos -m admin@onduran.com.tr
 systemctl reload nginx
 
 echo "=== [8/8] Servis ==="
