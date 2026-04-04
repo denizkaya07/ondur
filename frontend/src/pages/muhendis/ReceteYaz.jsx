@@ -683,18 +683,19 @@ ${analizler.length === 0
             )}
           </div>
 
-          <div style={s.alan}>
-            <label style={s.etiket}>Tarih *</label>
-            <input type="date" name="tarih" value={form.tarih} onChange={degis}
-              style={{...s.girdi, ...(hataliAlanlar.tarih ? s.hataliGirdi : {})}} />
-          </div>
-
-          <div style={s.alan}>
-            <label style={s.etiket}>Durum</label>
-            <select name="durum" value={form.durum} onChange={degis} style={s.girdi}>
-              <option value="taslak">Taslak</option>
-              <option value="onaylandi">Onaylandı</option>
-            </select>
+          <div style={{...s.alan, gridColumn:'span 2', display:'flex', gap:'12px'}}>
+            <div style={{flex:1}}>
+              <label style={s.etiket}>Tarih *</label>
+              <input type="date" name="tarih" value={form.tarih} onChange={degis}
+                style={{...s.girdi, ...(hataliAlanlar.tarih ? s.hataliGirdi : {})}} />
+            </div>
+            <div style={{flex:1}}>
+              <label style={s.etiket}>Durum</label>
+              <select name="durum" value={form.durum} onChange={degis} style={s.girdi}>
+                <option value="taslak">Taslak</option>
+                <option value="onaylandi">Onaylandı</option>
+              </select>
+            </div>
           </div>
 
           <div style={{...s.alan, gridColumn:'span 3'}}>
