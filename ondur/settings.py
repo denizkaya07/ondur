@@ -114,7 +114,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
-    CORS_ALLOWED_ORIGINS = config('CORS_ORIGINS', default='', cast=Csv())
+    CORS_ALLOWED_ORIGINS = ['https://onduran.com.tr', 'https://www.onduran.com.tr']
 
 CSRF_TRUSTED_ORIGINS = ['https://onduran.com.tr', 'https://www.onduran.com.tr']
 
