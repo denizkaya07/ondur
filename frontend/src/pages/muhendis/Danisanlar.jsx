@@ -102,6 +102,8 @@ export default function Danisanlar() {
   const [detayIsletme, setDetayIsletme] = useState(null)
   const [toprakIsletme, setToprakIsletme] = useState(null)
   const [toprakVeriler, setToprakVeriler] = useState({})
+  const [toprakEkle, setToprakEkle] = useState(null)
+  const [toprakForm, setToprakForm] = useState({})
   const [acikRecete, setAcikRecete] = useState(null)     // { id, data|null }
   const [receteDetay, setReceteDetay] = useState({})
 
@@ -428,18 +430,80 @@ export default function Danisanlar() {
 
                           {detayIsletme === isl.id && toprakIsletme === isl.id && (
                             <div style={{ marginTop:'4px', background:'#f8fdf9', border:'1px solid #e0ede6', borderRadius:'6px', padding:'8px 10px' }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
+                                <span style={{ fontWeight:'600', fontSize:'0.85rem', color:'#1a7a4a' }}>🧪 Toprak Analizi</span>
+                                <button
+                                  style={{ padding:'3px 10px', background:'#1a7a4a', color:'#fff', border:'none', borderRadius:'5px', cursor:'pointer', fontSize:'0.78rem' }}
+                                  onClick={e => { e.stopPropagation(); setToprakEkle(toprakEkle === isl.id ? null : isl.id); setToprakForm({ tarih: new Date().toISOString().slice(0,10) }) }}
+                                >
+                                  {toprakEkle === isl.id ? '✕ İptal' : '+ Ekle'}
+                                </button>
+                              </div>
+
+                              {toprakEkle === isl.id && (
+                                <div style={{ background:'#fff', border:'1px solid #d0eada', borderRadius:'6px', padding:'10px', marginBottom:'8px' }} onClick={e => e.stopPropagation()}>
+                                  <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', marginBottom:'8px' }}>
+                                    {[
+                                      { key:'tarih', label:'Tarih', type:'date' },
+                                      { key:'ph', label:'pH', type:'number' },
+                                      { key:'organik_madde', label:'Organik Madde (%)', type:'number' },
+                                      { key:'fosfor', label:'Fosfor (kg/da)', type:'number' },
+                                      { key:'potasyum', label:'Potasyum (kg/da)', type:'number' },
+                                      { key:'kalsiyum', label:'Kalsiyum (kg/da)', type:'number' },
+                                      { key:'magnezyum', label:'Magnezyum (kg/da)', type:'number' },
+                                      { key:'tuz', label:'Tuz (%)', type:'number' },
+                                    ].map(({ key, label, type }) => (
+                                      <div key={key} style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
+                                        <label style={{ fontSize:'0.72rem', color:'#666' }}>{label}</label>
+                                        <input
+                                          type={type}
+                                          step="0.01"
+                                          value={toprakForm[key] || ''}
+                                          onChange={e => setToprakForm(p => ({ ...p, [key]: e.target.value }))}
+                                          style={{ width:'110px', padding:'4px 6px', border:'1px solid #d0eada', borderRadius:'4px', fontSize:'0.82rem' }}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div style={{ marginBottom:'8px' }}>
+                                    <label style={{ fontSize:'0.72rem', color:'#666' }}>Notlar</label>
+                                    <textarea
+                                      value={toprakForm.notlar || ''}
+                                      onChange={e => setToprakForm(p => ({ ...p, notlar: e.target.value }))}
+                                      rows={2}
+                                      style={{ display:'block', width:'100%', padding:'4px 6px', border:'1px solid #d0eada', borderRadius:'4px', fontSize:'0.82rem', boxSizing:'border-box', resize:'vertical' }}
+                                    />
+                                  </div>
+                                  <button
+                                    style={{ padding:'5px 16px', background:'#1a7a4a', color:'#fff', border:'none', borderRadius:'5px', cursor:'pointer', fontSize:'0.82rem' }}
+                                    onClick={async e => {
+                                      e.stopPropagation()
+                                      const res = await api.post(`/ciftci/isletme/${isl.id}/toprak-analiz/`, toprakForm)
+                                      setToprakVeriler(p => ({ ...p, [isl.id]: [res.data, ...(p[isl.id] || [])] }))
+                                      setToprakEkle(null)
+                                      setToprakForm({})
+                                    }}
+                                  >
+                                    Kaydet
+                                  </button>
+                                </div>
+                              )}
+
                               {!toprakVeriler[isl.id]
                                 ? <p style={{ margin:0, fontSize:'0.85rem', color:'#999' }}>Yükleniyor…</p>
                                 : toprakVeriler[isl.id].length === 0
                                   ? <p style={{ margin:0, fontSize:'0.85rem', color:'#999' }}>Toprak analizi girilmemiş.</p>
                                   : toprakVeriler[isl.id].map((a, i) => (
-                                    <div key={i} style={{ display:'flex', gap:'12px', flexWrap:'wrap', fontSize:'0.8rem', color:'#444', borderBottom:'1px solid #eef4f1', paddingBottom:'4px', marginBottom:'4px' }}>
+                                    <div key={i} style={{ display:'flex', gap:'10px', flexWrap:'wrap', fontSize:'0.8rem', color:'#444', borderBottom:'1px solid #eef4f1', paddingBottom:'4px', marginBottom:'4px' }}>
                                       <span style={{ color:'#1a7a4a', fontWeight:'600', minWidth:'90px' }}>📅 {a.tarih}</span>
-                                      {a.ph       && <span>pH: {a.ph}</span>}
-                                      {a.azot     && <span>N: {a.azot}</span>}
-                                      {a.fosfor   && <span>P: {a.fosfor}</span>}
-                                      {a.potasyum && <span>K: {a.potasyum}</span>}
-                                      {a.notlar   && <span style={{ color:'#666' }}>{a.notlar}</span>}
+                                      {a.ph            && <span>pH: {a.ph}</span>}
+                                      {a.organik_madde && <span>OM: {a.organik_madde}%</span>}
+                                      {a.fosfor        && <span>P: {a.fosfor}</span>}
+                                      {a.potasyum      && <span>K: {a.potasyum}</span>}
+                                      {a.kalsiyum      && <span>Ca: {a.kalsiyum}</span>}
+                                      {a.magnezyum     && <span>Mg: {a.magnezyum}</span>}
+                                      {a.tuz           && <span>Tuz: {a.tuz}%</span>}
+                                      {a.notlar        && <span style={{ color:'#666' }}>{a.notlar}</span>}
                                     </div>
                                   ))
                               }
