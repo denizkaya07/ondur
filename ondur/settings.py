@@ -116,7 +116,11 @@ if DEBUG:
 else:
     CORS_ALLOWED_ORIGINS = ['https://onduran.com.tr', 'https://www.onduran.com.tr']
 
-CSRF_TRUSTED_ORIGINS = ['https://onduran.com.tr', 'https://www.onduran.com.tr']
+CSRF_TRUSTED_ORIGINS = [
+    'https://onduran.com.tr',
+    'https://www.onduran.com.tr',
+    'https://onduran.com.tr,https://onduran.com.tr',
+]
 
 # Güvenlik (production)
 if not DEBUG:
