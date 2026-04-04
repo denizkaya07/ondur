@@ -116,9 +116,10 @@ if DEBUG:
 else:
     CORS_ALLOWED_ORIGINS = config('CORS_ORIGINS', default='', cast=Csv())
 
+CSRF_TRUSTED_ORIGINS = ['https://onduran.com.tr', 'https://www.onduran.com.tr']
+
 # Güvenlik (production)
 if not DEBUG:
-    CSRF_TRUSTED_ORIGINS       = ['https://onduran.com.tr', 'https://www.onduran.com.tr']
     SECURE_PROXY_SSL_HEADER    = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT        = True
     SESSION_COOKIE_SECURE      = True
