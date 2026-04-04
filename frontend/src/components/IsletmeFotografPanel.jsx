@@ -9,7 +9,8 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
   const [fotograflar, setFotograflar] = useState(null)   // null = yükleniyor
   const [buyuk, setBuyuk]             = useState(null)   // lightbox
   const [yukluyor, setYukluyor]       = useState(false)
-  const inputRef = useRef()
+  const inputRef   = useRef()
+  const kameraRef  = useRef()
 
   useEffect(() => {
     api.get(`/ciftci/isletme/${isletmeId}/fotograflar/`)
@@ -52,7 +53,11 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
               <button style={s.yukleBtn} onClick={() => inputRef.current.click()} disabled={yukluyor}>
                 {yukluyor ? 'Yükleniyor…' : '+ Fotoğraf Ekle'}
               </button>
+              <button style={s.kameraBtn} onClick={() => kameraRef.current.click()} disabled={yukluyor}>
+                📷 Çek
+              </button>
               <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/gif" multiple style={{ display: 'none' }} onChange={yukle} />
+              <input ref={kameraRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={yukle} />
             </>
           )}
           <button style={s.kapatBtn} onClick={onKapat}>✕</button>
@@ -100,7 +105,8 @@ const s = {
   panel:   { background: '#f8fdf9', border: '1px solid #d0eada', borderRadius: '10px', padding: '12px 14px', marginTop: '8px' },
   ust:     { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
   baslik:  { fontWeight: '600', fontSize: '0.88rem', color: '#1a7a4a' },
-  yukleBtn:{ padding: '5px 12px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' },
+  yukleBtn: { padding: '5px 12px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' },
+  kameraBtn:{ padding: '5px 12px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' },
   kapatBtn:{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: '1rem' },
   bilgi:   { color: '#aaa', fontSize: '0.85rem', margin: 0 },
   grid:    { display: 'flex', flexWrap: 'wrap', gap: '8px' },
