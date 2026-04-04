@@ -355,10 +355,14 @@ export default function Danisanlar() {
                                 {urunEmoji(isl.urun_ad, isl.cesit_ad)}{' '}
                                 [ 🏢 {isl.ad} ] 👨‍🌾 {g.ciftci_ad} {g.ciftci_soyad}
                                 {'  -----  '}
-                                🌱 {isl.urun_ad || '—'}{isl.cesit_ad ? ` - ${isl.cesit_ad}` : ''}
+                                🌱 {isl.urun_ad || '—'}{isl.cesit_ad ? ` ${isl.cesit_ad}` : ''}
                                 {'  '}📏 {isl.alan_dekar ? <DekarGoster deger={isl.alan_dekar} /> : '—'}
                                 {gunFarki(isl.ekim_tarihi) !== null && <>{'  '}⏳ {gunFarki(isl.ekim_tarihi)} günlük</>}
-                                {isl.enlem && isl.boylam && <>{' '}<a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={s.gpsLink}>📍 GPS</a></>}
+                                {'  '}
+                                {isl.enlem && isl.boylam
+                                  ? <a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={s.gpsLink}>📍</a>
+                                  : <span style={{color:'#ccc', cursor:'default'}}>📍</span>
+                                }
                               </p>
                             </div>
                             <div style={{display:'flex',flexDirection:'row',gap:'5px',flexShrink:0,flexWrap:'wrap'}}>
