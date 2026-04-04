@@ -109,7 +109,7 @@ const s = {
   kameraBtn:{ padding: '5px 12px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' },
   kapatBtn:{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: '1rem' },
   bilgi:   { color: '#aaa', fontSize: '0.85rem', margin: 0 },
-  grid:    { display: 'flex', flexWrap: 'wrap', gap: '8px' },
+  grid:    { display: 'flex', flexWrap: 'nowrap', gap: '8px', overflowX: 'auto', paddingBottom: '4px' },
   thumb:   { width: '90px', background: '#fff', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e0ede6', cursor: 'pointer' },
   img:     { width: '90px', height: '70px', objectFit: 'cover', display: 'block' },
   thumbAlt:{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 5px' },
