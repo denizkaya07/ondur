@@ -24,7 +24,7 @@ print("Kullanicilar olusturuluyor...")
 
 def kullanici(username, tel, rol, ad, soyad):
     u = Kullanici.objects.create_user(
-        username=username, password='demo1234',
+        username=username, password='1234',
         telefon=tel, rol=rol,
         first_name=f'[DEMO] {ad}', last_name=soyad,
     )
