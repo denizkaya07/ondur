@@ -1,5 +1,6 @@
 /* eslint react/prop-types: 0 */
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import api from '../services/api'
 
 const BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'
@@ -51,7 +52,7 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
               <button style={s.yukleBtn} onClick={() => inputRef.current.click()} disabled={yukluyor}>
                 {yukluyor ? 'Yükleniyor…' : '+ Fotoğraf Ekle'}
               </button>
-              <input ref={inputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={yukle} />
+              <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/gif" multiple style={{ display: 'none' }} onChange={yukle} />
             </>
           )}
           <button style={s.kapatBtn} onClick={onKapat}>✕</button>
@@ -84,12 +85,13 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
         </div>
       )}
 
-      {/* Lightbox */}
-      {buyuk && (
+      {/* Lightbox — body'e portal ile render edilir, z-index sorununu önler */}
+      {buyuk && createPortal(
         <div style={s.lightbox} onClick={() => setBuyuk(null)}>
           <img src={`${BASE}${buyuk.fotograf}`} alt="" style={s.lightboxImg} onClick={e => e.stopPropagation()} />
           <button style={s.lightboxKapat} onClick={() => setBuyuk(null)}>✕</button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

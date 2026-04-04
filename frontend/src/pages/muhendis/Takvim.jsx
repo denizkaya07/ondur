@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import api from '../../services/api'
+import useBreakpoint from '../../hooks/useBreakpoint'
 
 const TUR_RENK = {
   saha:        { bg: '#e8f5ee', color: '#1a7a4a' },
@@ -40,6 +41,7 @@ function tarihStr(yil, ay, gun) {
 }
 
 export default function Takvim() {
+  const { isMobile } = useBreakpoint()
   const bugun      = new Date()
   const [yil, setYil]             = useState(bugun.getFullYear())
   const [ay, setAy]               = useState(bugun.getMonth())
@@ -145,7 +147,7 @@ export default function Takvim() {
   if (yukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
 
   return (
-    <div style={s.kapsayici}>
+    <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       {/* Üst bar */}
       <div style={s.ustBar}>
         <div style={s.navRow}>
@@ -164,7 +166,7 @@ export default function Takvim() {
             <button style={s.kapatBtn} onClick={formKapat}>✕</button>
           </div>
           <form onSubmit={kaydet}>
-            <div style={s.formGrid}>
+            <div style={{ ...s.formGrid, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
               <div style={s.alan}>
                 <label style={s.etiket}>İşletme *</label>
                 <select name="isletme" value={form.isletme} onChange={handleDegis} style={s.girdi}>
@@ -198,7 +200,7 @@ export default function Takvim() {
                 <label style={s.etiket}>Adres</label>
                 <input type="text" name="adres" value={form.adres} onChange={handleDegis} style={s.girdi} />
               </div>
-              <div style={{...s.alan, gridColumn: 'span 2'}}>
+              <div style={{...s.alan, gridColumn: isMobile ? 'span 1' : 'span 2'}}>
                 <label style={s.etiket}>Notlar</label>
                 <textarea name="notlar" value={form.notlar} onChange={handleDegis} style={{...s.girdi, height: '64px', resize: 'vertical'}} />
               </div>
@@ -260,10 +262,21 @@ export default function Takvim() {
         <div style={s.gunDetay}>
           <div style={s.gunDetayUst}>
             <span style={s.gunDetayBaslik}>
-              {seciliGun} {AYLAR[ay]} — {seciliGunZiyaretler.length} ziyaret
+              {seciliGun} {AYLAR[ay]} —{' '}
+              <span
+                style={s.ekleLink}
+                onClick={() => formAc(seciliGun)}
+              >
+                + Ziyaret Ekle
+              </span>
             </span>
-            <button style={s.ekleKucukBtn} onClick={() => formAc(seciliGun)}>+ Ekle</button>
           </div>
+
+          {seciliGunZiyaretler.length > 1 && (
+            <p style={s.cakismaUyari}>
+              ⚠️ Bu günde {seciliGunZiyaretler.length} ziyaret var, saatlerin çakışmadığından emin olun.
+            </p>
+          )}
 
           {seciliGunZiyaretler.length === 0 ? (
             <p style={s.bosGun}>Bu gün için ziyaret yok.</p>
@@ -325,7 +338,7 @@ const s = {
 
   takvim: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: '12px', padding: '12px' },
   gunBaslik:      { textAlign: 'center', fontSize: '0.78rem', fontWeight: '600', color: '#aaa', padding: '4px 0 8px' },
-  gunHucre:       { minHeight: '72px', borderRadius: '8px', padding: '6px', cursor: 'default' },
+  gunHucre:       { minHeight: '60px', borderRadius: '8px', padding: '4px', cursor: 'default' },
   gunHucreAktif:  { cursor: 'pointer', transition: 'background 0.15s' },
   gunHucreBugun:  { background: '#f0faf4' },
   gunHucreSecili: { background: '#e8f5ee', outline: '2px solid #1a7a4a' },
@@ -339,7 +352,8 @@ const s = {
   gunDetay:    { marginTop: '1rem', background: '#fff', border: '1px solid #e8e8e8', borderRadius: '12px', padding: '1rem' },
   gunDetayUst: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
   gunDetayBaslik: { fontWeight: '600', color: '#333', fontSize: '0.95rem' },
-  ekleKucukBtn:   { padding: '5px 12px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem' },
+  ekleLink:       { color: '#1a7a4a', cursor: 'pointer', fontWeight: '500', fontSize: '0.88rem', textDecoration: 'underline dotted' },
+  cakismaUyari:   { margin: '0 0 10px', padding: '7px 12px', background: '#fff8e1', border: '1px solid #f6c94e', borderRadius: '8px', fontSize: '0.83rem', color: '#7a5c00' },
   bosGun:      { color: '#aaa', textAlign: 'center', padding: '1rem 0', fontSize: '0.9rem' },
 
   ziyaretKart:       { border: '1px solid #eee', borderRadius: '8px', padding: '10px 12px', marginBottom: '8px', cursor: 'pointer' },

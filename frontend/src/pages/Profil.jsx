@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import useBreakpoint from '../hooks/useBreakpoint'
 
 export default function Profil() {
   const { kullanici, setKullanici } = useAuth()
+  const { isMobile } = useBreakpoint()
   const [form, setForm] = useState({
     first_name: kullanici?.first_name || '',
     last_name:  kullanici?.last_name  || '',
@@ -65,7 +67,7 @@ export default function Profil() {
   }
 
   return (
-    <div style={s.kapsayici}>
+    <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <h2 style={s.baslik}>Profilim</h2>
 
       {/* Özet kart */}

@@ -2,10 +2,12 @@ import { useEffect, useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import { AuthContext } from '../../context/AuthContext'
+import useBreakpoint from '../../hooks/useBreakpoint'
 
 export default function Talepler() {
   const navigate = useNavigate()
   const { kullanici, yukleniyor: authYukleniyor } = useContext(AuthContext)
+  const { isMobile } = useBreakpoint()
   const [talepler, setTalepler]     = useState([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [islemde, setIslemde]       = useState(null)
@@ -48,7 +50,7 @@ export default function Talepler() {
   if (hata) return <div style={s.hataMsg}>{hata}</div>
 
   return (
-    <div style={s.kapsayici}>
+    <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <h2 style={s.baslik}>Bekleyen Talepler</h2>
 
       {talepler.length === 0 ? (
@@ -73,7 +75,7 @@ export default function Talepler() {
                 </div>
               </div>
 
-              <div style={s.butonlar}>
+              <div style={{ ...s.butonlar, flexDirection: isMobile ? 'column' : 'row' }}>
                 <button
                   style={s.reddetBtn}
                   onClick={() => yanitla(t.id, 'reddet')}

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import api from '../../services/api'
+import useBreakpoint from '../../hooks/useBreakpoint'
 
 export default function Analiz() {
+  const { isMobile } = useBreakpoint()
   const [veri, setVeri]           = useState(null)
   const [yukleniyor, setYukleniyor] = useState(true)
   const [hata, setHata]           = useState('')
@@ -39,10 +41,10 @@ export default function Analiz() {
   ]).size
 
   return (
-    <div style={s.kapsayici}>
+    <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <h2 style={s.baslik}>Analiz</h2>
 
-      <div style={s.kartlar}>
+      <div style={{ ...s.kartlar, gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)' }}>
         <div style={s.ozetKart}>
           <p style={s.ozetSayi}>{ilaclar.length + gubreler.length}</p>
           <p style={s.ozetEtiket}>Ürün Kullanımı</p>
@@ -81,7 +83,7 @@ export default function Analiz() {
           Bölgenizde onaylı reçetelerde henüz {tab === 'ilac' ? 'ilaç' : 'gübre'} kullanım verisi yok.
         </div>
       ) : (
-        <div style={s.tablo}>
+        <div style={{ ...s.tablo, overflowX: 'auto' }}>
           <div style={s.tabloBaslik}>
             <span style={{flex: 3}}>Ürün</span>
             <span style={{flex: 1, textAlign: 'right'}}>İşletme</span>

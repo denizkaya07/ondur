@@ -1,6 +1,7 @@
 /* eslint react/prop-types: 0 */
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import useBreakpoint from '../../hooks/useBreakpoint'
 
 function urunEmoji(urunAd, cesitAd) {
   const m = `${cesitAd || ''} ${urunAd || ''}`.toLowerCase()
@@ -407,6 +408,7 @@ function TakipBolum({ items, setItems }) {
 // ─── ANA BİLEŞEN ───
 export default function ReceteYaz() {
   const navigate = useNavigate()
+  const { isMobile } = useBreakpoint()
   const [searchParams] = useSearchParams()
   const [isletmeler,  setIsletmeler]  = useState([])
   const [katalogIndex, setKatalogIndex] = useState({})  // { ticari_ad: {...urun} }
@@ -513,7 +515,7 @@ export default function ReceteYaz() {
   🏢 ${isletme.ad} &nbsp;|&nbsp;
   👨‍🌾 ${isl.ciftci_ad || ''} ${isl.ciftci_soyad || ''} &nbsp;|&nbsp;
   🌱 ${isletme.urun_ad || '—'}${isletme.cesit_ad ? ' - ' + isletme.cesit_ad : ''} &nbsp;|&nbsp;
-  📏 ${isletme.alan_dekar || '—'} da
+  📏 ${isletme.alan_dekar ? parseFloat(isletme.alan_dekar) : '—'} da
 </div>
 ${analizler.length === 0
   ? '<p class="bos">Bu işletme için toprak analizi girilmemiş.</p>'
@@ -630,7 +632,7 @@ ${analizler.length === 0
   }
 
   return (
-    <div style={s.sayfa}>
+    <div style={{ ...s.sayfa, padding: isMobile ? '1rem' : '1.5rem 2rem' }}>
       {/* Üst bar */}
       <div style={s.ustBar}>
         <button style={s.geriBtn} onClick={() => navigate('/muhendis/receteler')}>
@@ -661,7 +663,7 @@ ${analizler.length === 0
                       [ 🏢 {isl?.ad || '—'} ] 👨‍🌾 {seciliIsletme?.ciftci_ad} {seciliIsletme?.ciftci_soyad}
                       {'  -----  '}
                       🌱 {isl?.urun_ad || '—'}{isl?.cesit_ad ? ` - ${isl.cesit_ad}` : ''}
-                      {isl?.alan_dekar ? `  📏 ${isl.alan_dekar} da` : ''}
+                      {isl?.alan_dekar ? `  📏 ${parseFloat(isl.alan_dekar)} da` : ''}
                       {dikimGun !== null ? `  ⏳ ${dikimGun} günlük` : ''}
                       {isl?.enlem && isl?.boylam && <>{' '}<a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" style={{color:'#1a7a4a'}}>📍 GPS</a></>}
                     </p>
@@ -674,7 +676,7 @@ ${analizler.length === 0
                 {isletmeler.map(d => (
                   <option key={d.isletme.id} value={d.isletme.id}>
                     {d.isletme.ad}
-                    {d.isletme.alan_dekar ? ` — ${d.isletme.alan_dekar} da` : ''}
+                    {d.isletme.alan_dekar ? ` — ${parseFloat(d.isletme.alan_dekar)} da` : ''}
                   </option>
                 ))}
               </select>

@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import { AuthContext } from '../../context/AuthContext'
+import useBreakpoint from '../../hooks/useBreakpoint'
 
 const DURUM_RENK = {
   taslak:    { bg: '#fff8e1', color: '#b7791f' },
@@ -19,6 +20,7 @@ const TIP_ETIKET = {
 export default function Recetelerim() {
   const navigate = useNavigate()
   const { kullanici, yukleniyor: authYukleniyor } = useContext(AuthContext)
+  const { isMobile } = useBreakpoint()
   const [receteler, setReceteler]   = useState([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [secili, setSecili]         = useState(null)
@@ -64,7 +66,7 @@ export default function Recetelerim() {
   if (hata) return <div style={s.hataMsg}>{hata}</div>
 
   return (
-    <div style={s.kapsayici}>
+    <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <h2 style={s.baslik}>Reçetelerim</h2>
 
       {receteler.length === 0 ? (

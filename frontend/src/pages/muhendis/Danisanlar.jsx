@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import { AuthContext } from '../../context/AuthContext'
 import IsletmeFotografPanel from '../../components/IsletmeFotografPanel'
+import useBreakpoint from '../../hooks/useBreakpoint'
 
 function ReceteDetayIcerik({ recete }) {
   const adimlar = recete.adimlar || []
@@ -33,6 +34,21 @@ function ReceteDetayIcerik({ recete }) {
       {takip.length > 0 && <p style={{ margin:'4px 0', fontWeight:'500', color:'#1a7a4a' }}>📋 Takip</p>}
       {takip.map(a => <p key={a.id} style={{ margin:'0 0 2px', paddingLeft:'12px' }}>• {a.uygulama_tarihi ? `${a.uygulama_tarihi} — ` : ''}{a.tanim}</p>)}
     </div>
+  )
+}
+
+function DekarGoster({ deger }) {
+  if (!deger) return '—'
+  const sayi = parseFloat(deger)
+  const tam = Math.floor(sayi)
+  const ondalik = (sayi - tam).toFixed(2).slice(1) // ".00" veya ".50" vb.
+  const ondalikSifir = ondalik === '.00'
+  return (
+    <span>
+      {tam}
+      <span style={{ fontSize: '0.72em', opacity: ondalikSifir ? 0.5 : 1 }}>{ondalik}</span>
+      {' da'}
+    </span>
   )
 }
 
@@ -67,6 +83,7 @@ const DURUM_RENK = {
 export default function Danisanlar() {
   const navigate = useNavigate()
   const { kullanici, yukleniyor: authYukleniyor } = useContext(AuthContext)
+  const { isMobile } = useBreakpoint()
   const [danisanlar, setDanisanlar]     = useState([])
   const [yukleniyor, setYukleniyor]     = useState(true)
   const [aramaAcik, setAramaAcik]       = useState(false)
@@ -215,7 +232,7 @@ export default function Danisanlar() {
   if (hata) return <div style={s.hataMsg}>{hata}</div>
 
   return (
-    <div style={s.kapsayici}>
+    <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <div style={s.ustBar}>
         <h2 style={s.baslik}>Danışanlarım</h2>
         <button style={s.ekleBtn} onClick={aramaAc}>+ Danışan Ekle</button>
@@ -265,7 +282,7 @@ export default function Danisanlar() {
                       />
                       <span>
                         <strong>{i.ad}</strong>
-                        <span style={s.isletmeBilgi}> · {i.cesit_ad || i.urun_ad || '—'} · {i.alan_dekar} da</span>
+                        <span style={s.isletmeBilgi}> · {i.cesit_ad || i.urun_ad || '—'} · <DekarGoster deger={i.alan_dekar} /></span>
                       </span>
                     </label>
                   ))}
@@ -330,7 +347,7 @@ export default function Danisanlar() {
                       {g.isletmeler.map(isl => isl && (
                         <div key={isl.id}>
                           <div
-                            style={s.isletmeKart}
+                            style={{ ...s.isletmeKart, flexWrap: isMobile ? 'wrap' : 'nowrap' }}
                             onClick={() => navigate(`/muhendis/recete/yaz?isletme=${isl.id}`)}
                           >
                             <div style={s.isletmeKartSol}>
@@ -339,12 +356,12 @@ export default function Danisanlar() {
                                 [ 🏢 {isl.ad} ] 👨‍🌾 {g.ciftci_ad} {g.ciftci_soyad}
                                 {'  -----  '}
                                 🌱 {isl.urun_ad || '—'}{isl.cesit_ad ? ` - ${isl.cesit_ad}` : ''}
-                                {'  '}📏 {isl.alan_dekar ? `${isl.alan_dekar} da` : '—'}
+                                {'  '}📏 {isl.alan_dekar ? <DekarGoster deger={isl.alan_dekar} /> : '—'}
                                 {gunFarki(isl.ekim_tarihi) !== null && <>{'  '}⏳ {gunFarki(isl.ekim_tarihi)} günlük</>}
                                 {isl.enlem && isl.boylam && <>{' '}<a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={s.gpsLink}>📍 GPS</a></>}
                               </p>
                             </div>
-                            <div style={{display:'flex',flexDirection:'column',gap:'5px',flexShrink:0}}>
+                            <div style={{display:'flex',flexDirection:'row',gap:'5px',flexShrink:0,flexWrap:'wrap'}}>
                               <button
                                 style={{...s.gecmisBtn, ...(gecmisIsletme === isl.id ? s.gecmisBtnAcik : {})}}
                                 onClick={e => gecmisToggle(e, isl.id)}
@@ -471,7 +488,7 @@ const s = {
   gpsLink:       { color: '#1a7a4a', textDecoration: 'none', fontWeight: '500' },
   ayrintiBtn:    { padding: '5px 12px', background: '#e8f5ee', color: '#1a7a4a', border: '1px solid #c8e6d4', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem' },
   gecmisBtn:     { padding: '5px 12px', background: '#f5f5f5', color: '#888', border: '1px solid #e8e8e8', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', flexShrink: 0 },
-  gecmisBtnAcik: { background: '#e8f5ee', color: '#1a7a4a', borderColor: '#c8e6d4' },
+  gecmisBtnAcik: { background: '#e8f5ee', color: '#1a7a4a', border: '1px solid #c8e6d4' },
   gecmisPanel:   { background: '#fafafa', borderTop: '1px solid #f0f0f0', padding: '0.75rem 1.25rem 0.75rem 1.5rem' },
   detayPanel:    { background: '#f8fdf9', borderTop: '1px solid #d0eada', padding: '0.75rem 1.25rem 0.75rem 2rem', margin: '0' },
   gecmisYukleniyor: { color: '#aaa', fontSize: '0.85rem', margin: 0 },

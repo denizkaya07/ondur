@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
 import api from '../../services/api'
+import useBreakpoint from '../../hooks/useBreakpoint'
 
 const KATEGORI = ['fungisit','insektisit','herbisit','akarisit','nematisit','rodentisit','mollusisit','diger']
 const KATEGORI_ETIKET = {
@@ -114,6 +115,7 @@ Satir.propTypes = {
 }
 
 function UrunForm({ tip, mevcut, onKapat, onKaydet }) {
+  const { isMobile } = useBreakpoint()
   const [form, setForm]     = useState(mevcut || (tip === 'ilac' ? ILAC_BOSLUK() : GUBRE_BOSLUK()))
   const [hata, setHata]     = useState('')
   const [yukleniyor, setYukleniyor] = useState(false)
@@ -150,8 +152,8 @@ function UrunForm({ tip, mevcut, onKapat, onKaydet }) {
   }
 
   return (
-    <div style={s.modalOverlay} onClick={onKapat}>
-      <div style={s.modal} onClick={e => e.stopPropagation()}>
+    <div style={{ ...s.modalOverlay, alignItems: isMobile ? 'flex-end' : 'center', padding: isMobile ? '0' : '1rem' }} onClick={onKapat}>
+      <div style={{ ...s.modal, width: isMobile ? '100%' : '560px', maxHeight: isMobile ? '100vh' : '90vh', borderRadius: isMobile ? '12px 12px 0 0' : '14px' }} onClick={e => e.stopPropagation()}>
         <div style={s.modalUst}>
           <h3 style={s.modalBaslik}>
             {mevcut ? 'Ürün Düzenle' : (tip === 'ilac' ? 'Yeni İlaç' : 'Yeni Gübre')}
@@ -159,7 +161,7 @@ function UrunForm({ tip, mevcut, onKapat, onKaydet }) {
           <button style={s.kapat} onClick={onKapat}>✕</button>
         </div>
 
-        <form onSubmit={gonder} style={s.formGrid}>
+        <form onSubmit={gonder} style={{ ...s.formGrid, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
           <div style={{...s.alan, gridColumn:'span 2'}}>
             <label style={s.etiket}>Ticari Ad *</label>
             <input name="ticari_ad" value={form.ticari_ad} onChange={degis} style={s.girdi} required />
@@ -251,6 +253,7 @@ function UrunForm({ tip, mevcut, onKapat, onKaydet }) {
 }
 
 export default function Katalog() {
+  const { isMobile } = useBreakpoint()
   const [tab, setTab]           = useState('ilac')
   const [ilaclar, setIlaclar]   = useState([])
   const [gubreler, setGubreler] = useState([])
@@ -294,7 +297,7 @@ export default function Katalog() {
   if (yukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
 
   return (
-    <div style={s.kapsayici}>
+    <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <div style={s.ustBar}>
         <h2 style={s.baslik}>Katalogum</h2>
         <div style={{display:'flex', gap:'8px', alignItems:'center'}}>

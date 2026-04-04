@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import api from '../../services/api'
+import useBreakpoint from '../../hooks/useBreakpoint'
 
 const DURUM_RENK = {
   taslak:    { background: '#fff8e1', color: '#b7791f' },
@@ -10,6 +11,7 @@ const DURUM_RENK = {
 const DURUM_ETIKET = { taslak: 'Taslak', onaylandi: 'Onaylandı', iptal: 'İptal' }
 
 export default function Receteler() {
+  const { isMobile } = useBreakpoint()
   const [receteler, setReceteler]   = useState([])
   const [detaylar, setDetaylar]     = useState({})   // { [id]: ReceteSerializer data }
   const [acik, setAcik]             = useState(null)
@@ -45,7 +47,7 @@ export default function Receteler() {
   if (yukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
 
   return (
-    <div style={s.kapsayici}>
+    <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <div style={s.ustBar}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {isletmeId && (
@@ -74,9 +76,9 @@ export default function Receteler() {
             </thead>
             <tbody>
               {receteler.map(r => (
-                <>
+                <React.Fragment key={r.id}>
                   {/* Ana reçete satırı */}
-                  <tr key={r.id} style={{ ...s.satir, ...(acik === r.id ? s.satirAcik : {}) }}
+                  <tr style={{ ...s.satir, ...(acik === r.id ? s.satirAcik : {}) }}
                     onClick={() => toggle(r.id)}>
                     <td style={s.td}>{r.ciftci_ad} {r.ciftci_soyad || ''}</td>
                     <td style={s.td}>{r.isletme_ad}</td>
@@ -97,7 +99,7 @@ export default function Receteler() {
 
                   {/* Ürün satırları */}
                   {acik === r.id && (
-                    <tr key={`${r.id}-detay`}>
+                    <tr>
                       <td colSpan={6} style={s.detayTd}>
                         {!detaylar[r.id] && detaylar[r.id] !== null
                           ? <p style={s.yukleniyor}>Yükleniyor…</p>
@@ -129,7 +131,7 @@ export default function Receteler() {
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
           </table>

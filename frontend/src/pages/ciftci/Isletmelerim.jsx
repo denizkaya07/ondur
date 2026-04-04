@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import { AuthContext } from '../../context/AuthContext'
 import IsletmeFotografPanel from '../../components/IsletmeFotografPanel'
+import useBreakpoint from '../../hooks/useBreakpoint'
 
 const URUN_EMOJI = {
   domates:'🩷', cherry:'🍒', biber:'🫑', patlican:'🍆',
@@ -43,6 +44,7 @@ const SERA_TIP = {
 export default function Isletmelerim() {
   const navigate = useNavigate()
   const { kullanici, yukleniyor: authYukleniyor } = useContext(AuthContext)
+  const { isMobile } = useBreakpoint()
   const [isletmeler, setIsletmeler] = useState([])
   const [urunler, setUrunler]       = useState([])
   const [cesitler, setCesitler]     = useState([])
@@ -124,7 +126,7 @@ export default function Isletmelerim() {
   if (hata) return <div style={s.hataMsg}>{hata}</div>
 
   return (
-    <div style={s.kapsayici}>
+    <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <div style={s.ustBar}>
         <h2 style={s.baslik}>İşletmelerim</h2>
         <button style={s.ekleBtn} onClick={() => { setFormAcik(true); setHata('') }}>
@@ -139,7 +141,7 @@ export default function Isletmelerim() {
             <button style={s.kapatBtn} onClick={() => setFormAcik(false)}>✕</button>
           </div>
           <form onSubmit={kaydet}>
-            <div style={s.formGrid}>
+            <div style={{ ...s.formGrid, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
               <div style={{...s.alan, gridColumn: 'span 2'}}>
                 <label style={s.etiket}>İşletme Adı *</label>
                 <input style={s.girdi} name="ad" value={form.ad} onChange={degis} placeholder="Örn: Kuzey Serası" />
@@ -185,9 +187,9 @@ export default function Isletmelerim() {
                 <label style={s.etiket}>Ekim Tarihi</label>
                 <input style={s.girdi} name="ekim_tarihi" type="date" value={form.ekim_tarihi} onChange={degis} />
               </div>
-              <div style={{...s.alan, gridColumn:'span 2'}}>
+              <div style={{...s.alan, gridColumn: isMobile ? 'span 1' : 'span 2'}}>
                 <label style={s.etiket}>GPS Konumu</label>
-                <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+                <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
                   <input style={{...s.girdi, flex:1}} name="enlem" type="number" step="0.000001" placeholder="Enlem (36.123456)" value={form.enlem} onChange={degis} />
                   <input style={{...s.girdi, flex:1}} name="boylam" type="number" step="0.000001" placeholder="Boylam (30.123456)" value={form.boylam} onChange={degis} />
                   <button type="button" style={s.konumBtn} onClick={() => {
@@ -235,7 +237,7 @@ export default function Isletmelerim() {
                   [ 🏢 {i.ad} ]
                   {'  -----  '}
                   🌱 {i.urun_ad || '—'}{i.cesit_ad ? ` - ${i.cesit_ad}` : ''}
-                  {i.alan_dekar ? `  📏 ${i.alan_dekar} da` : ''}
+                  {i.alan_dekar ? `  📏 ${parseFloat(i.alan_dekar)} da` : ''}
                   {gunFarki(i.ekim_tarihi) !== null && `  ⏳ ${gunFarki(i.ekim_tarihi)} günlük`}
                   {i.enlem && i.boylam && <>{' '}<a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 GPS</a></>}
                 </p>
