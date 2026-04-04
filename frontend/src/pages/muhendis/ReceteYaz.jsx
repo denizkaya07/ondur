@@ -716,15 +716,15 @@ ${analizler.length === 0
             )}
           </div>
 
-          <div style={{...s.alan, gridColumn:'span 2', display:'flex', gap:'12px'}}>
-            <div style={{flex:1}}>
-              <label style={s.etiket}>Tarih *</label>
+          <div style={{...s.alan, gridColumn:'span 3', flexDirection:'row', alignItems:'center', gap:'8px', flexWrap:'wrap'}}>
+            <div style={{display:'flex', alignItems:'center', gap:'4px'}}>
+              <label style={{...s.etiket, margin:0, fontSize:'0.78rem'}}>Tarih *</label>
               <input type="date" name="tarih" value={form.tarih} onChange={degis}
-                style={{...s.girdi, ...(hataliAlanlar.tarih ? s.hataliGirdi : {})}} />
+                style={{...s.girdi, fontSize:'0.78rem', padding:'4px 6px', width:'130px', ...(hataliAlanlar.tarih ? s.hataliGirdi : {})}} />
             </div>
-            <div style={{flex:1}}>
-              <label style={s.etiket}>Durum</label>
-              <select name="durum" value={form.durum} onChange={degis} style={s.girdi}>
+            <div style={{display:'flex', alignItems:'center', gap:'4px'}}>
+              <label style={{...s.etiket, margin:0, fontSize:'0.78rem'}}>Durum</label>
+              <select name="durum" value={form.durum} onChange={degis} style={{...s.girdi, fontSize:'0.78rem', padding:'4px 6px', width:'110px'}}>
                 <option value="taslak">Taslak</option>
                 <option value="onaylandi">Onaylandı</option>
               </select>
