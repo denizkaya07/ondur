@@ -411,10 +411,12 @@ export default function ReceteYaz() {
   const { isMobile } = useBreakpoint()
   const [searchParams] = useSearchParams()
   const [isletmeler,  setIsletmeler]  = useState([])
-  const [katalogIndex, setKatalogIndex] = useState({})  // { ticari_ad: {...urun} }
+  const [katalogIndex, setKatalogIndex] = useState({})
   const [kaydediyor,  setKaydediyor]  = useState(false)
   const [hata,        setHata]        = useState('')
   const [hataliAlanlar, setHataliAlanlar] = useState({})
+  const [toprakAcik,  setToprakAcik]  = useState(false)
+  const [toprakVeriler, setToprakVeriler] = useState([])
   const autoSaveRef = useRef(null)
 
   const isletmeParam = searchParams.get('isletme') || ''
@@ -658,15 +660,46 @@ ${analizler.length === 0
                   : null
                 return (
                   <div style={s.isletmeKart}>
-                    <p style={s.isletmeBaslikMetin}>
-                      {emoji}{' '}
-                      [ 🏢 {isl?.ad || '—'} ] 👨‍🌾 {seciliIsletme?.ciftci_ad} {seciliIsletme?.ciftci_soyad}
-                      {'  -----  '}
-                      🌱 {isl?.urun_ad || '—'}{isl?.cesit_ad ? ` - ${isl.cesit_ad}` : ''}
-                      {isl?.alan_dekar ? `  📏 ${parseFloat(isl.alan_dekar)} da` : ''}
-                      {dikimGun !== null ? `  ⏳ ${dikimGun} günlük` : ''}
-                      {isl?.enlem && isl?.boylam && <>{' '}<a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" style={{color:'#1a7a4a'}}>📍 GPS</a></>}
-                    </p>
+                    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'8px'}}>
+                      <p style={{...s.isletmeBaslikMetin, margin:0}}>
+                        {emoji}{' '}
+                        [ 🏢 {isl?.ad || '—'} ] 👨‍🌾 {seciliIsletme?.ciftci_ad} {seciliIsletme?.ciftci_soyad}
+                        {'  -----  '}
+                        🌱 {isl?.urun_ad || '—'}{isl?.cesit_ad ? ` - ${isl.cesit_ad}` : ''}
+                        {isl?.alan_dekar ? `  📏 ${parseFloat(isl.alan_dekar)} da` : ''}
+                        {dikimGun !== null ? `  ⏳ ${dikimGun} günlük` : ''}
+                        {isl?.enlem && isl?.boylam && <>{' '}<a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" style={{color:'#1a7a4a'}}>📍 GPS</a></>}
+                      </p>
+                      <button style={s.toprakMiniBtn} onClick={async () => {
+                        if (!toprakAcik) {
+                          try {
+                            const res = await api.get(`/ciftci/isletme/${isl.id}/toprak-analiz/`)
+                            const sirali = [...(res.data || [])].sort((a,b) => b.tarih.localeCompare(a.tarih))
+                            setToprakVeriler(sirali)
+                          } catch { setToprakVeriler([]) }
+                        }
+                        setToprakAcik(p => !p)
+                      }}>
+                        🧪 Toprak Analizi {toprakAcik ? '▲' : '▼'}
+                      </button>
+                    </div>
+                    {toprakAcik && (
+                      <div style={s.toprakPanel}>
+                        {toprakVeriler.length === 0
+                          ? <p style={{color:'#aaa', fontSize:'0.82rem', margin:0}}>Toprak analizi girilmemiş.</p>
+                          : toprakVeriler.map((a, i) => (
+                            <div key={i} style={s.toprakSatir}>
+                              <span style={s.toprakTarih}>📅 {a.tarih}</span>
+                              <span>pH: <b>{a.ph ?? '—'}</b></span>
+                              <span>OM: <b>{a.organik_madde ?? '—'}%</b></span>
+                              <span>P: <b>{a.fosfor ?? '—'}</b></span>
+                              <span>K: <b>{a.potasyum ?? '—'}</b></span>
+                              <span>Tuz: <b>{a.tuz ?? '—'}</b></span>
+                            </div>
+                          ))
+                        }
+                      </div>
+                    )}
                   </div>
                 )
               })()
@@ -762,6 +795,10 @@ const s = {
   iptalBtn:  { padding:'9px 18px', background:'#f0f0f0', color:'#555', border:'none', borderRadius:'8px', cursor:'pointer', fontSize:'0.9rem' },
   toprakBar: { margin:'12px 0', display:'flex' },
   toprakBtn: { padding:'9px 20px', background:'#fff', color:'#1a7a4a', border:'1px solid #c8e6d4', borderRadius:'8px', cursor:'pointer', fontSize:'0.9rem', fontWeight:'500' },
+  toprakMiniBtn: { padding:'4px 10px', background:'#f0faf5', color:'#1a7a4a', border:'1px solid #c8e6d4', borderRadius:'6px', cursor:'pointer', fontSize:'0.78rem', fontWeight:'500', whiteSpace:'nowrap' },
+  toprakPanel: { marginTop:'8px', background:'#f8fdf9', border:'1px solid #e0ede6', borderRadius:'6px', padding:'8px 10px', display:'flex', flexDirection:'column', gap:'4px' },
+  toprakSatir: { display:'flex', gap:'12px', flexWrap:'wrap', fontSize:'0.8rem', color:'#444', borderBottom:'1px solid #eef4f1', paddingBottom:'4px' },
+  toprakTarih: { color:'#1a7a4a', fontWeight:'600', minWidth:'90px' },
   ziyaretBtn: { padding:'9px 18px', background:'#f0f0f0', color:'#1a7a4a', border:'1px solid #c8e6d4', borderRadius:'8px', cursor:'pointer', fontSize:'0.9rem', fontWeight:'500' },
 
   temelKart: { background:'#fff', border:'1px solid #e8e8e8', borderRadius:'12px', padding:'1.25rem', marginBottom:'10px' },
