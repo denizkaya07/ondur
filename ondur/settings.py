@@ -119,7 +119,6 @@ else:
 CSRF_TRUSTED_ORIGINS = [
     'https://onduran.com.tr',
     'https://www.onduran.com.tr',
-    'https://onduran.com.tr,https://onduran.com.tr',
 ]
 
 # Güvenlik (production)

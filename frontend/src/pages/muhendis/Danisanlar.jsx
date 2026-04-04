@@ -98,6 +98,10 @@ export default function Danisanlar() {
   const [gecmisIsletme, setGecmisIsletme] = useState(null)
   const [gecmisReceteler, setGecmisReceteler] = useState({})
   const [fotografIsletme, setFotografIsletme] = useState(null)
+  const [gpsIsletme, setGpsIsletme] = useState(null)
+  const [detayIsletme, setDetayIsletme] = useState(null)
+  const [toprakIsletme, setToprakIsletme] = useState(null)
+  const [toprakVeriler, setToprakVeriler] = useState({})
   const [acikRecete, setAcikRecete] = useState(null)     // { id, data|null }
   const [receteDetay, setReceteDetay] = useState({})
 
@@ -358,14 +362,28 @@ export default function Danisanlar() {
                                 🌱 {isl.urun_ad || '—'}{isl.cesit_ad ? ` ${isl.cesit_ad}` : ''}
                                 {'  '}📏 {isl.alan_dekar ? <DekarGoster deger={isl.alan_dekar} /> : '—'}
                                 {gunFarki(isl.ekim_tarihi) !== null && <>{'  '}⏳ {gunFarki(isl.ekim_tarihi)} günlük</>}
-                                {'  '}
-                                {isl.enlem && isl.boylam
-                                  ? <a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={s.gpsLink}>📍</a>
-                                  : <span style={{color:'#ccc', cursor:'default'}}>📍</span>
-                                }
                               </p>
                             </div>
                             <div style={{display:'flex',flexDirection:'row',gap:'5px',flexShrink:0,flexWrap:'wrap'}}>
+                              <button
+                                style={{...s.gecmisBtn, ...(detayIsletme === isl.id ? s.gecmisBtnAcik : {})}}
+                                onClick={e => { e.stopPropagation(); setDetayIsletme(detayIsletme === isl.id ? null : isl.id) }}
+                              >
+                                ☰ Detay
+                              </button>
+                            </div>
+                          </div>
+
+                          {detayIsletme === isl.id && (
+                            <div style={{ display:'flex', flexWrap:'wrap', gap:'6px', padding:'8px 4px 4px' }}>
+                              {isl.enlem && isl.boylam && (
+                                <button
+                                  style={{...s.gecmisBtn, ...(gpsIsletme === isl.id ? s.gecmisBtnAcik : {})}}
+                                  onClick={e => { e.stopPropagation(); setGpsIsletme(gpsIsletme === isl.id ? null : isl.id) }}
+                                >
+                                  📍 Harita
+                                </button>
+                              )}
                               <button
                                 style={{...s.gecmisBtn, ...(gecmisIsletme === isl.id ? s.gecmisBtnAcik : {})}}
                                 onClick={e => gecmisToggle(e, isl.id)}
@@ -378,10 +396,57 @@ export default function Danisanlar() {
                               >
                                 📷 Fotoğraflar
                               </button>
+                              <button
+                                style={{...s.gecmisBtn, ...(toprakIsletme === isl.id ? s.gecmisBtnAcik : {})}}
+                                onClick={async e => {
+                                  e.stopPropagation()
+                                  if (toprakIsletme === isl.id) { setToprakIsletme(null); return }
+                                  setToprakIsletme(isl.id)
+                                  if (!toprakVeriler[isl.id]) {
+                                    const res = await api.get(`/ciftci/isletme/${isl.id}/toprak-analiz/`)
+                                    setToprakVeriler(p => ({ ...p, [isl.id]: res.data }))
+                                  }
+                                }}
+                              >
+                                🧪 Toprak Analizi
+                              </button>
                             </div>
-                          </div>
+                          )}
 
-                          {fotografIsletme === isl.id && (
+                          {detayIsletme === isl.id && gpsIsletme === isl.id && (
+                            <div style={{ margin: '4px 0', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
+                              <iframe
+                                title="harita"
+                                width="100%"
+                                height="300"
+                                style={{ display: 'block', border: 'none' }}
+                                src={`https://maps.google.com/maps?q=${isl.enlem},${isl.boylam}&z=15&output=embed`}
+                                allowFullScreen
+                              />
+                            </div>
+                          )}
+
+                          {detayIsletme === isl.id && toprakIsletme === isl.id && (
+                            <div style={{ marginTop:'4px', background:'#f8fdf9', border:'1px solid #e0ede6', borderRadius:'6px', padding:'8px 10px' }}>
+                              {!toprakVeriler[isl.id]
+                                ? <p style={{ margin:0, fontSize:'0.85rem', color:'#999' }}>Yükleniyor…</p>
+                                : toprakVeriler[isl.id].length === 0
+                                  ? <p style={{ margin:0, fontSize:'0.85rem', color:'#999' }}>Toprak analizi girilmemiş.</p>
+                                  : toprakVeriler[isl.id].map((a, i) => (
+                                    <div key={i} style={{ display:'flex', gap:'12px', flexWrap:'wrap', fontSize:'0.8rem', color:'#444', borderBottom:'1px solid #eef4f1', paddingBottom:'4px', marginBottom:'4px' }}>
+                                      <span style={{ color:'#1a7a4a', fontWeight:'600', minWidth:'90px' }}>📅 {a.tarih}</span>
+                                      {a.ph       && <span>pH: {a.ph}</span>}
+                                      {a.azot     && <span>N: {a.azot}</span>}
+                                      {a.fosfor   && <span>P: {a.fosfor}</span>}
+                                      {a.potasyum && <span>K: {a.potasyum}</span>}
+                                      {a.notlar   && <span style={{ color:'#666' }}>{a.notlar}</span>}
+                                    </div>
+                                  ))
+                              }
+                            </div>
+                          )}
+
+                          {detayIsletme === isl.id && fotografIsletme === isl.id && (
                             <IsletmeFotografPanel
                               isletmeId={isl.id}
                               canUpload={true}
@@ -389,7 +454,7 @@ export default function Danisanlar() {
                             />
                           )}
 
-                          {gecmisIsletme === isl.id && (
+                          {detayIsletme === isl.id && gecmisIsletme === isl.id && (
                             <div style={s.gecmisPanel}>
                               {!gecmisReceteler[isl.id] ? (
                                 <p style={s.gecmisYukleniyor}>Yükleniyor…</p>
