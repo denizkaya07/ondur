@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import api from '../services/api'
 
-const BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://127.0.0.1:8000'
+// fotograf_url backend'den tam URL olarak geliyor, BASE artık gerekmiyor
 
 export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKapat }) {
   const [fotograflar, setFotograflar] = useState(null)   // null = yükleniyor
@@ -68,7 +68,7 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
           {fotograflar.map(f => (
             <div key={f.id} style={s.thumb}>
               <img
-                src={`${BASE}${f.fotograf}`}
+                src={f.fotograf}
                 alt={f.aciklama || ''}
                 style={s.img}
                 loading="lazy"
@@ -88,7 +88,7 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
       {/* Lightbox — body'e portal ile render edilir, z-index sorununu önler */}
       {buyuk && createPortal(
         <div style={s.lightbox} onClick={() => setBuyuk(null)}>
-          <img src={`${BASE}${buyuk.fotograf}`} alt="" style={s.lightboxImg} onClick={e => e.stopPropagation()} />
+          <img src={buyuk.fotograf} alt="" style={s.lightboxImg} onClick={e => e.stopPropagation()} />
           <button style={s.lightboxKapat} onClick={() => setBuyuk(null)}>✕</button>
         </div>,
         document.body
