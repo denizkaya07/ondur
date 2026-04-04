@@ -121,7 +121,6 @@ CSRF_TRUSTED_ORIGINS = ['https://onduran.com.tr', 'https://www.onduran.com.tr']
 # Güvenlik (production)
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER    = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT        = True
     SESSION_COOKIE_SECURE      = True
     CSRF_COOKIE_SECURE         = True
     SECURE_HSTS_SECONDS        = 0
