@@ -755,14 +755,6 @@ ${analizler.length === 0
       <BiyolojikBolum items={biyolojik} setItems={setBiyolojik} />
       <TakipBolum     items={takip}     setItems={setTakip} />
 
-      {/* Toprak Analizi PDF */}
-      {seciliIsletme && (
-        <div style={s.toprakBar}>
-          <button style={s.toprakBtn} onClick={() => toprakAnalizPdf(seciliIsletme)}>
-            🧪 Toprak Analizi PDF
-          </button>
-        </div>
-      )}
 
       {/* Alt bar */}
       {hata && <p style={s.hata}>{hata}</p>}
