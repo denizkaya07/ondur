@@ -440,6 +440,10 @@ export default function Danisanlar() {
                                 🌱 {isl.urun_ad || '—'}{isl.cesit_ad ? ` ${isl.cesit_ad}` : ''}
                                 {'  '}📏 {isl.alan_dekar ? <DekarGoster deger={isl.alan_dekar} /> : '—'}
                                 {gunFarki(isl.ekim_tarihi) !== null && <>{'  '}⏳ {gunFarki(isl.ekim_tarihi)} günlük</>}
+                                {'  '}{isl.enlem && isl.boylam
+                                  ? <a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 {parseFloat(isl.enlem).toFixed(4)}, {parseFloat(isl.boylam).toFixed(4)}</a>
+                                  : <span style={{color:'#ccc',fontSize:'0.78rem'}}>📍 GPS yok</span>
+                                }
                               </p>
                             </div>
                             <div style={{display:'flex',flexDirection:'row',gap:'5px',flexShrink:0,flexWrap:'wrap'}}>

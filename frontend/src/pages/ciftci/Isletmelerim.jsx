@@ -246,9 +246,9 @@ export default function Isletmelerim() {
                   🌱 {i.urun_ad || '—'}{i.cesit_ad ? ` - ${i.cesit_ad}` : ''}
                   {i.alan_dekar ? `  📏 ${parseFloat(i.alan_dekar)} da` : ''}
                   {gunFarki(i.ekim_tarihi) !== null && `  ⏳ ${gunFarki(i.ekim_tarihi)} günlük`}
-                  {i.enlem && i.boylam
-                    ? <>{' '}<a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 {parseFloat(i.enlem).toFixed(4)}, {parseFloat(i.boylam).toFixed(4)}</a></>
-                    : <span style={{ color:'#ccc', fontSize:'0.78rem' }}>  📍 GPS yok</span>
+                  {'  '}{i.enlem && i.boylam
+                    ? <a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 {parseFloat(i.enlem).toFixed(4)}, {parseFloat(i.boylam).toFixed(4)}</a>
+                    : <span style={{ color:'#bbb', fontSize:'0.78rem' }}>📍 GPS yok</span>
                   }
                 </p>
                 <span style={i.aktif ? s.aktifBadge : s.pasifBadge}>
@@ -450,7 +450,7 @@ const s = {
   konumBtn:  { padding: '7px 12px', background: '#e8f5ee', color: '#1a7a4a', border: '1px solid #c8e6d4', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', whiteSpace: 'nowrap' },
   analizKart:       { marginTop: '12px', padding: '10px 12px', background: '#f8fdf9', border: '1px solid #d0eada', borderRadius: '8px' },
   analizBaslik:     { margin: '0 0 8px', fontWeight: '600', fontSize: '0.85rem', color: '#1a7a4a' },
-  analizGrid:       { display: 'flex', flexWrap: 'wrap', gap: '8px 20px', fontSize: '0.83rem', color: '#444' },
+  analizGrid:       { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '6px 12px', fontSize: '0.83rem', color: '#444', marginTop: '4px' },
   analizNot:        { margin: '8px 0 0', fontSize: '0.82rem', color: '#666' },
   analizYukleniyor: { fontSize: '0.83rem', color: '#aaa', marginTop: '10px' },
   analizYok:        { fontSize: '0.83rem', color: '#aaa', marginTop: '6px' },
