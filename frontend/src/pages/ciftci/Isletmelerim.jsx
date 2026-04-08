@@ -57,6 +57,9 @@ export default function Isletmelerim() {
   const [fotografAcik, setFotografAcik] = useState(null)
   const [receteler, setReceteler]     = useState(null)
   const [recAcik, setRecAcik]         = useState(null)
+  const [gpsAcik, setGpsAcik]         = useState(null)
+  const [gpsForm, setGpsForm]         = useState({ enlem: '', boylam: '' })
+  const [gpsKaydediyor, setGpsKaydediyor] = useState(false)
   const [formAcik, setFormAcik]     = useState(false)
   const [kaydediyor, setKaydediyor] = useState(false)
   const [hata, setHata]             = useState('')
@@ -247,8 +250,8 @@ export default function Isletmelerim() {
                   {i.alan_dekar ? `  📏 ${parseFloat(i.alan_dekar)} da` : ''}
                   {gunFarki(i.ekim_tarihi) !== null && `  ⏳ ${gunFarki(i.ekim_tarihi)} günlük`}
                   {'  '}{i.enlem && i.boylam
-                    ? <a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 {parseFloat(i.enlem).toFixed(4)}, {parseFloat(i.boylam).toFixed(4)}</a>
-                    : <span style={{ color:'#bbb', fontSize:'0.78rem' }}>📍 GPS yok</span>
+                    ? <a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 {parseFloat(i.enlem).toFixed(5)}, {parseFloat(i.boylam).toFixed(5)}</a>
+                    : <span style={{ color:'#e07000', fontSize:'0.78rem', fontWeight:'500' }}>📍 GPS girilmemiş</span>
                   }
                 </p>
                 <span style={i.aktif ? s.aktifBadge : s.pasifBadge}>
@@ -288,16 +291,20 @@ export default function Isletmelerim() {
                   {/* Aksiyon butonları */}
                   <div style={s.aksiyonlar}>
                     <button style={{...s.aksiyonBtn, ...(recAcik === i.id ? s.aksiyonAktif : {})}}
-                      onClick={e => { e.stopPropagation(); setRecAcik(recAcik === i.id ? null : i.id); setFotografAcik(null); setToprakAcik(null) }}>
-                      📋 Reçeteler {recAcik === i.id ? '▲' : '▼'}
+                      onClick={e => { e.stopPropagation(); setRecAcik(recAcik === i.id ? null : i.id); setFotografAcik(null); setToprakAcik(null); setGpsAcik(null) }}>
+                      📋 Reçeteler
                     </button>
                     <button style={{...s.aksiyonBtn, ...(fotografAcik === i.id ? s.aksiyonAktif : {})}}
-                      onClick={e => { e.stopPropagation(); setFotografAcik(fotografAcik === i.id ? null : i.id); setRecAcik(null); setToprakAcik(null) }}>
-                      📷 Fotoğraflar {fotografAcik === i.id ? '▲' : '▼'}
+                      onClick={e => { e.stopPropagation(); setFotografAcik(fotografAcik === i.id ? null : i.id); setRecAcik(null); setToprakAcik(null); setGpsAcik(null) }}>
+                      📷 Fotoğraflar
                     </button>
                     <button style={{...s.aksiyonBtn, ...(toprakAcik === i.id ? s.aksiyonAktif : {})}}
-                      onClick={e => { e.stopPropagation(); setToprakAcik(toprakAcik === i.id ? null : i.id); setRecAcik(null); setFotografAcik(null); setToprakEkle(null) }}>
-                      🧪 Toprak Analizi {toprakAcik === i.id ? '▲' : '▼'}
+                      onClick={e => { e.stopPropagation(); setToprakAcik(toprakAcik === i.id ? null : i.id); setRecAcik(null); setFotografAcik(null); setGpsAcik(null); setToprakEkle(null) }}>
+                      🧪 Toprak
+                    </button>
+                    <button style={{...s.aksiyonBtn, ...(gpsAcik === i.id ? s.aksiyonAktif : {}), ...((!i.enlem || !i.boylam) ? { borderColor:'#e07000', color:'#e07000' } : {})}}
+                      onClick={e => { e.stopPropagation(); setGpsAcik(gpsAcik === i.id ? null : i.id); setRecAcik(null); setFotografAcik(null); setToprakAcik(null); setGpsForm({ enlem: i.enlem || '', boylam: i.boylam || '' }) }}>
+                      📍 GPS {(!i.enlem || !i.boylam) ? '!' : ''}
                     </button>
                   </div>
 
@@ -329,6 +336,53 @@ export default function Isletmelerim() {
                         canUpload={true}
                         onKapat={() => setFotografAcik(null)}
                       />
+                    </div>
+                  )}
+
+                  {/* GPS paneli */}
+                  {gpsAcik === i.id && (
+                    <div style={s.toprakForm} onClick={e => e.stopPropagation()}>
+                      <p style={{ margin:'0 0 10px', fontWeight:'600', fontSize:'0.85rem', color:'#1a7a4a' }}>📍 GPS Konumu</p>
+                      <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', alignItems:'flex-end' }}>
+                        <div>
+                          <label style={{ fontSize:'0.72rem', color:'#666', display:'block', marginBottom:'2px' }}>Enlem</label>
+                          <input type="number" step="0.000001" placeholder="36.123456"
+                            value={gpsForm.enlem}
+                            onChange={e => setGpsForm(f => ({ ...f, enlem: e.target.value }))}
+                            style={{ width:'140px', padding:'6px 8px', border:'1px solid #d0eada', borderRadius:'6px', fontSize:'0.88rem' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize:'0.72rem', color:'#666', display:'block', marginBottom:'2px' }}>Boylam</label>
+                          <input type="number" step="0.000001" placeholder="30.123456"
+                            value={gpsForm.boylam}
+                            onChange={e => setGpsForm(f => ({ ...f, boylam: e.target.value }))}
+                            style={{ width:'140px', padding:'6px 8px', border:'1px solid #d0eada', borderRadius:'6px', fontSize:'0.88rem' }} />
+                        </div>
+                        <button style={{ padding:'6px 12px', background:'#e8f5ee', color:'#1a7a4a', border:'1px solid #c8e6d4', borderRadius:'6px', cursor:'pointer', fontSize:'0.82rem' }}
+                          onClick={() => {
+                            if (!navigator.geolocation) return
+                            navigator.geolocation.getCurrentPosition(
+                              pos => setGpsForm({ enlem: pos.coords.latitude.toFixed(6), boylam: pos.coords.longitude.toFixed(6) }),
+                              () => alert('Konum alınamadı.')
+                            )
+                          }}>
+                          📍 Konumumu Al
+                        </button>
+                        <button style={s.toprakKaydetBtn}
+                          disabled={gpsKaydediyor || !gpsForm.enlem || !gpsForm.boylam}
+                          onClick={async e => {
+                            e.stopPropagation()
+                            setGpsKaydediyor(true)
+                            try {
+                              const res = await api.patch(`/ciftci/isletme/${i.id}/guncelle/`, { enlem: gpsForm.enlem, boylam: gpsForm.boylam })
+                              setIsletmeler(prev => prev.map(x => x.id === i.id ? { ...x, enlem: res.data.enlem, boylam: res.data.boylam } : x))
+                              setGpsAcik(null)
+                            } catch { alert('Kaydedilemedi.') }
+                            finally { setGpsKaydediyor(false) }
+                          }}>
+                          {gpsKaydediyor ? 'Kaydediliyor…' : 'Kaydet'}
+                        </button>
+                      </div>
                     </div>
                   )}
 

@@ -107,6 +107,15 @@ class CiftciIsletmeEkleView(generics.CreateAPIView):
         serializer.save(ciftci=self.request.user.ciftci_profili, olusturan=self.request.user)
 
 
+class CiftciIsletmeGuncelleView(generics.UpdateAPIView):
+    permission_classes = [IsCiftci]
+    serializer_class   = IsletmeSerializer
+    http_method_names  = ['patch']
+
+    def get_queryset(self):
+        return Isletme.objects.filter(ciftci__kullanici=self.request.user)
+
+
 class BekleyenTaleplerView(generics.ListAPIView):
     permission_classes = [IsCiftci]
     serializer_class   = MuhendisIsletmeSerializer
