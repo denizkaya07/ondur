@@ -64,19 +64,50 @@ function Bolum({ ikon, baslik, acik, onToggle, onEkle, ekleEtiket, children }) {
   )
 }
 
+const SABIT_YONTEMLER = ['Yapraktan', 'Damla', 'Sulama Suyu', 'Toprak']
+
 // ─── 💧 Sulama satırı ───
 function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
   const [turFiltre, setTurFiltre] = useState('')
 
-  // Katalogdan benzersiz türleri çıkar
-  const turler = [...new Set(Object.values(katalogIndex).map(u => u._tip === 'ilac' ? `İlaç: ${u._turEtiket}` : `Gübre: ${u._turEtiket}`))].sort()
+  // Yöntem eşleşmesi — katalogda "Yapraktan, Damla" gibi çoklu olabilir
+  const yontemEsles = (urunYontem, filtre) => {
+    if (!filtre) return true
+    if (!urunYontem) return true
+    return urunYontem.toLowerCase().includes(filtre.toLowerCase())
+  }
 
+  // Türler — seçili yönteme göre filtreli
+  const turler = [...new Set(
+    Object.values(katalogIndex)
+      .filter(u => yontemEsles(u.uygulama_yontemi, satir.yontem))
+      .map(u => u._tip === 'ilac' ? `İlaç: ${u._turEtiket}` : `Gübre: ${u._turEtiket}`)
+  )].sort()
+
+  // Ürün datalist — hem tür hem yöntem filtresine göre
   const filtreliAnahtar = Object.keys(katalogIndex).filter(k => {
-    if (!turFiltre) return true
     const u = katalogIndex[k]
-    const etiket = u._tip === 'ilac' ? `İlaç: ${u._turEtiket}` : `Gübre: ${u._turEtiket}`
-    return etiket === turFiltre
+    if (turFiltre) {
+      const etiket = u._tip === 'ilac' ? `İlaç: ${u._turEtiket}` : `Gübre: ${u._turEtiket}`
+      if (etiket !== turFiltre) return false
+    }
+    if (!yontemEsles(u.uygulama_yontemi, satir.yontem)) return false
+    return true
   })
+
+  // Uygulama yöntemi seçenekleri — seçili türe göre kataloğdan; yoksa sabit liste
+  const katYontemler = [...new Set(
+    Object.values(katalogIndex)
+      .filter(u => {
+        if (!turFiltre) return true
+        const etiket = u._tip === 'ilac' ? `İlaç: ${u._turEtiket}` : `Gübre: ${u._turEtiket}`
+        return etiket === turFiltre
+      })
+      .map(u => u.uygulama_yontemi)
+      .filter(Boolean)
+      .flatMap(y => y.split(',').map(s => s.trim()))
+  )].sort()
+  const yontemler = katYontemler.length > 0 ? katYontemler : SABIT_YONTEMLER
 
   const autofill = (ad) => {
     const urun = katalogIndex[ad]
@@ -113,7 +144,7 @@ function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
         <select
           style={{...s.tdGirdi, width:'130px', fontSize:'11px', color: turFiltre ? '#1a7a4a' : '#aaa'}}
           value={turFiltre}
-          onChange={e => { setTurFiltre(e.target.value); onChange({ ...satir, urun_ad: '', urun_id: '', urun_tip: '', tur: '' }) }}
+          onChange={e => { setTurFiltre(e.target.value); onChange({ ...satir, urun_ad: '', urun_id: '', urun_tip: '', tur: '', yontem: 'Yapraktan' }) }}
         >
           <option value="">— Tür —</option>
           {turler.map(t => <option key={t} value={t}>{t}</option>)}
@@ -163,10 +194,14 @@ function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
         <input style={{...s.tdGirdi, width:'80px'}} value={satir.toplam || '—'} readOnly />
       </td>
       <td style={s.td}>
-        <select style={{...s.tdGirdi, width:'100px'}}
-          value={satir.yontem} onChange={e => guncelle('yontem', e.target.value)}>
-          <option>Yapraktan</option><option>Damla</option>
-          <option>Sulama Suyu</option><option>Toprak</option>
+        <select style={{...s.tdGirdi, width:'110px', color: satir.yontem ? '#1a7a4a' : '#aaa'}}
+          value={satir.yontem}
+          onChange={e => { setTurFiltre(''); onChange({ ...satir, yontem: e.target.value, urun_ad: '', urun_id: '', urun_tip: '', tur: '' }) }}>
+          <option value="">— Yöntem —</option>
+          {yontemler.map(y => <option key={y} value={y}>{y}</option>)}
+          {satir.yontem && !yontemler.includes(satir.yontem) && (
+            <option value={satir.yontem}>{satir.yontem}</option>
+          )}
         </select>
       </td>
       <td style={s.td}>
@@ -626,7 +661,7 @@ ${analizler.length === 0
       localStorage.removeItem(LS_KEY+'_kultur')
       localStorage.removeItem(LS_KEY+'_biyo')
       localStorage.removeItem(LS_KEY+'_takip')
-      navigate('/muhendis/receteler')
+      navigate(isletmeParam ? '/muhendis/danisanlar' : '/muhendis/receteler')
     } catch (err) {
       setHata(err.response?.data ? JSON.stringify(err.response.data) : 'Kayıt başarısız.')
       setKaydediyor(false)

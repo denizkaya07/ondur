@@ -51,7 +51,11 @@ export default function Isletmelerim() {
   const [yukleniyor, setYukleniyor] = useState(true)
   const [secili, setSecili]         = useState(null)
   const [toprakAnalizler, setToprakAnalizler] = useState({})
+  const [toprakEkle, setToprakEkle]   = useState(null)
+  const [toprakForm, setToprakForm]   = useState({})
   const [fotografAcik, setFotografAcik] = useState(null)
+  const [receteler, setReceteler]     = useState(null)
+  const [recAcik, setRecAcik]         = useState(null)
   const [formAcik, setFormAcik]     = useState(false)
   const [kaydediyor, setKaydediyor] = useState(false)
   const [hata, setHata]             = useState('')
@@ -70,9 +74,11 @@ export default function Isletmelerim() {
     Promise.all([
       api.get('/ciftci/isletmelerim/'),
       api.get('/ciftci/urunler/'),
-    ]).then(([is, ur]) => {
+      api.get('/recete/benim/'),
+    ]).then(([is, ur, rec]) => {
       setIsletmeler(is.data)
       setUrunler(ur.data)
+      setReceteler(rec.data)
     }).catch(err => {
       console.error(err)
       setHata('Veriler yüklenirken hata oluştu.')
@@ -265,14 +271,107 @@ export default function Isletmelerim() {
                     <span>{new Date(i.olusturma).toLocaleDateString('tr-TR')}</span>
                   </div>
 
-                  {/* Toprak Analiz */}
+                  {/* Aksiyon butonları */}
+                  <div style={s.aksiyonlar}>
+                    <button style={{...s.aksiyonBtn, ...(recAcik === i.id ? s.aksiyonAktif : {})}}
+                      onClick={e => { e.stopPropagation(); setRecAcik(recAcik === i.id ? null : i.id); setFotografAcik(null) }}>
+                      📋 Reçeteler {recAcik === i.id ? '▲' : '▼'}
+                    </button>
+                    <button style={{...s.aksiyonBtn, ...(fotografAcik === i.id ? s.aksiyonAktif : {})}}
+                      onClick={e => { e.stopPropagation(); setFotografAcik(fotografAcik === i.id ? null : i.id); setRecAcik(null) }}>
+                      📷 Fotoğraflar {fotografAcik === i.id ? '▲' : '▼'}
+                    </button>
+                  </div>
+
+                  {/* Reçeteler paneli */}
+                  {recAcik === i.id && (
+                    <div style={s.panelIcerik} onClick={e => e.stopPropagation()}>
+                      {receteler === null
+                        ? <p style={s.analizYukleniyor}>Yükleniyor…</p>
+                        : receteler.filter(r => r.isletme === i.id).length === 0
+                          ? <p style={s.analizYok}>Bu işletme için henüz reçete yok.</p>
+                          : receteler.filter(r => r.isletme === i.id).map(r => (
+                              <div key={r.id} style={s.receteKart}>
+                                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                                  <span style={{ fontWeight:'500', fontSize:'0.88rem' }}>{r.tani || '(Tanı yok)'}</span>
+                                  <span style={{ fontSize:'0.78rem', color:'#888' }}>{r.tarih}</span>
+                                </div>
+                                <p style={{ margin:'2px 0 0', fontSize:'0.78rem', color:'#888' }}>👷 {r.muhendis_ad}</p>
+                              </div>
+                            ))
+                      }
+                    </div>
+                  )}
+
+                  {/* Fotoğraflar paneli */}
+                  {fotografAcik === i.id && (
+                    <div onClick={e => e.stopPropagation()}>
+                      <IsletmeFotografPanel
+                        isletmeId={i.id}
+                        canUpload={true}
+                        onKapat={() => setFotografAcik(null)}
+                      />
+                    </div>
+                  )}
+
+                  {/* Toprak Analizi */}
+                  <div style={s.toprakBaslikSatir}>
+                    <span style={s.analizBaslik}>🧪 Toprak Analizi</span>
+                    <button style={s.toprakEkleBtn}
+                      onClick={e => { e.stopPropagation(); setToprakEkle(toprakEkle === i.id ? null : i.id); setToprakForm({ tarih: new Date().toISOString().slice(0,10) }) }}>
+                      {toprakEkle === i.id ? '✕ İptal' : '+ Ekle'}
+                    </button>
+                  </div>
+
+                  {toprakEkle === i.id && (
+                    <div style={s.toprakForm} onClick={e => e.stopPropagation()}>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', marginBottom:'8px' }}>
+                        {[
+                          { key:'tarih', label:'Tarih', type:'date' },
+                          { key:'ph', label:'pH', type:'number' },
+                          { key:'organik_madde', label:'Org. Madde (%)', type:'number' },
+                          { key:'fosfor', label:'Fosfor (kg/da)', type:'number' },
+                          { key:'potasyum', label:'Potasyum (kg/da)', type:'number' },
+                          { key:'kalsiyum', label:'Kalsiyum (kg/da)', type:'number' },
+                          { key:'magnezyum', label:'Magnezyum (kg/da)', type:'number' },
+                          { key:'tuz', label:'Tuz (%)', type:'number' },
+                        ].map(({ key, label, type }) => (
+                          <div key={key} style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
+                            <label style={{ fontSize:'0.72rem', color:'#666' }}>{label}</label>
+                            <input type={type} step="0.01"
+                              value={toprakForm[key] || ''}
+                              onChange={e => setToprakForm(p => ({ ...p, [key]: e.target.value }))}
+                              style={{ width:'110px', padding:'4px 6px', border:'1px solid #d0eada', borderRadius:'4px', fontSize:'0.82rem' }} />
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ marginBottom:'8px' }}>
+                        <label style={{ fontSize:'0.72rem', color:'#666' }}>Notlar</label>
+                        <textarea value={toprakForm.notlar || ''}
+                          onChange={e => setToprakForm(p => ({ ...p, notlar: e.target.value }))}
+                          rows={2}
+                          style={{ display:'block', width:'100%', padding:'4px 6px', border:'1px solid #d0eada', borderRadius:'4px', fontSize:'0.82rem', boxSizing:'border-box', resize:'vertical' }} />
+                      </div>
+                      <button style={s.toprakKaydetBtn}
+                        onClick={async e => {
+                          e.stopPropagation()
+                          const res = await api.post(`/ciftci/isletme/${i.id}/toprak-analiz/`, toprakForm)
+                          setToprakAnalizler(p => ({ ...p, [i.id]: [res.data, ...(p[i.id] || [])] }))
+                          setToprakEkle(null)
+                          setToprakForm({})
+                        }}>
+                        Kaydet
+                      </button>
+                    </div>
+                  )}
+
                   {toprakAnalizler[i.id] === undefined
-                    ? <p style={s.analizYukleniyor}>Toprak analizi yükleniyor…</p>
+                    ? <p style={s.analizYukleniyor}>Yükleniyor…</p>
                     : toprakAnalizler[i.id].length === 0
-                      ? <p style={s.analizYok}>🧪 Toprak analizi henüz girilmemiş.</p>
+                      ? <p style={s.analizYok}>Henüz toprak analizi girilmemiş.</p>
                       : toprakAnalizler[i.id].slice(0, 1).map(a => (
                           <div key={a.id} style={s.analizKart}>
-                            <p style={s.analizBaslik}>🧪 Toprak Analizi — {a.tarih}</p>
+                            <p style={s.analizBaslik}>Son analiz — {a.tarih}</p>
                             <div style={s.analizGrid}>
                               {a.ph        != null && <span>pH: <b>{a.ph}</b></span>}
                               {a.organik_madde != null && <span>Org. Madde: <b>{a.organik_madde}%</b></span>}
@@ -288,23 +387,6 @@ export default function Isletmelerim() {
                   }
                 </div>
               )}
-
-              {/* Fotoğraf butonu + panel */}
-              <div style={{padding:'0 0 4px'}}>
-                <button
-                  style={{...s.analizYok, background:'none', border:'none', cursor:'pointer', color:'#1a7a4a', fontSize:'0.85rem', padding:'6px 0'}}
-                  onClick={e => { e.stopPropagation(); setFotografAcik(fotografAcik === i.id ? null : i.id) }}
-                >
-                  📷 Fotoğraflar {fotografAcik === i.id ? '▲' : '▼'}
-                </button>
-                {fotografAcik === i.id && (
-                  <IsletmeFotografPanel
-                    isletmeId={i.id}
-                    canUpload={true}
-                    onKapat={() => setFotografAcik(null)}
-                  />
-                )}
-              </div>
             </div>
           ))}
         </div>
@@ -349,5 +431,14 @@ const s = {
   analizGrid:       { display: 'flex', flexWrap: 'wrap', gap: '8px 20px', fontSize: '0.83rem', color: '#444' },
   analizNot:        { margin: '8px 0 0', fontSize: '0.82rem', color: '#666' },
   analizYukleniyor: { fontSize: '0.83rem', color: '#aaa', marginTop: '10px' },
-  analizYok:        { fontSize: '0.83rem', color: '#aaa', marginTop: '10px' },
+  analizYok:        { fontSize: '0.83rem', color: '#aaa', marginTop: '6px' },
+  aksiyonlar:       { display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' },
+  aksiyonBtn:       { padding: '5px 14px', background: '#f5f5f5', color: '#555', border: '1px solid #e0e0e0', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem' },
+  aksiyonAktif:     { background: '#e8f5ee', color: '#1a7a4a', borderColor: '#c8e6d4' },
+  panelIcerik:      { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' },
+  receteKart:       { padding: '8px 12px', background: '#f8fdf9', border: '1px solid #d0eada', borderRadius: '6px' },
+  toprakBaslikSatir:{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #f0f0f0' },
+  toprakEkleBtn:    { padding: '3px 10px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '0.78rem' },
+  toprakForm:       { background: '#fff', border: '1px solid #d0eada', borderRadius: '6px', padding: '10px', marginTop: '8px' },
+  toprakKaydetBtn:  { padding: '5px 16px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '0.82rem' },
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import html2pdf from 'html2pdf.js'
 import api from '../../services/api'
 import useBreakpoint from '../../hooks/useBreakpoint'
 
@@ -158,51 +159,49 @@ function recetePdfIndir(detay) {
   }).join('')
 
   const kulturelHtml = adimlar.filter(a => a.notlar?.includes('[kültürel]'))
-    .map(a => `<li>🌿 ${a.tanim}</li>`).join('')
+    .map(a => `<li>Kültürel: ${a.tanim}</li>`).join('')
   const biyoHtml = adimlar.filter(a => a.notlar?.includes('[biyolojik]'))
-    .map(a => `<li>🐞 ${a.tanim}</li>`).join('')
+    .map(a => `<li>Biyolojik: ${a.tanim}</li>`).join('')
   const takipHtml = adimlar.filter(a => a.notlar?.includes('[takip]'))
-    .map(a => `<li>📋 ${a.uygulama_tarihi ? a.uygulama_tarihi + ' — ' : ''}${a.tanim}</li>`).join('')
+    .map(a => `<li>${a.uygulama_tarihi ? a.uygulama_tarihi + ' — ' : ''}${a.tanim}</li>`).join('')
 
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>Reçete #${detay.id} — ${detay.isletme_ad}</title>
-<style>
-  * { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; padding: 32px; color: #222; max-width: 860px; margin: auto; }
-  h1 { color: #1a7a4a; font-size: 1.4rem; margin: 0 0 4px; }
-  .meta { display: flex; flex-wrap: wrap; gap: 8px 20px; color: #555; font-size: 0.88rem; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #1a7a4a; }
-  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; background: ${detay.durum === 'onaylandi' ? '#e8f5ee' : '#fff8e1'}; color: ${detay.durum === 'onaylandi' ? '#1a7a4a' : '#b7791f'}; }
-  .tani { background: #f8fdf9; border-left: 4px solid #1a7a4a; padding: 10px 14px; margin-bottom: 16px; font-size: 0.95rem; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-  th { background: #e8f5ee; color: #1a7a4a; padding: 7px 10px; text-align: left; font-size: 0.83rem; }
-  td { padding: 7px 10px; border-bottom: 1px solid #eee; font-size: 0.88rem; }
-  ul { margin: 6px 0; padding-left: 18px; font-size: 0.88rem; line-height: 1.8; }
-  .not { margin-top: 16px; padding: 10px 14px; background: #fff8e1; border-radius: 6px; font-size: 0.88rem; }
-  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #eee; font-size: 0.78rem; color: #aaa; }
-  @media print { button { display:none!important; } body { padding: 16px; } }
-</style></head><body>
-<h1>🌱 Ondur Reçete #${detay.id}</h1>
-<div class="meta">
-  <span>📅 ${detay.tarih}</span>
-  <span>🏢 ${detay.isletme_ad}</span>
-  <span>👨‍🌾 ${detay.ciftci_ad || ''} ${detay.ciftci_soyad || ''}</span>
-  ${detay.ciftci_telefon ? `<span>📞 ${detay.ciftci_telefon}</span>` : ''}
-  <span>👷 ${detay.muhendis_ad || ''}</span>
-  <span class="badge">${detay.durum === 'onaylandi' ? 'Onaylandı' : 'Taslak'}</span>
+  const el = document.createElement('div')
+  el.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:#fff;padding:32px;font-family:Arial,sans-serif;color:#222;'
+  el.innerHTML = `
+<h1 style="color:#1a7a4a;font-size:1.4rem;margin:0 0 4px">Ondur Recete #${detay.id}</h1>
+<div style="display:flex;flex-wrap:wrap;gap:8px 20px;color:#555;font-size:0.88rem;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #1a7a4a;">
+  <span>Tarih: ${detay.tarih}</span>
+  <span>Isletme: ${detay.isletme_ad}</span>
+  <span>Ciftci: ${detay.ciftci_ad || ''} ${detay.ciftci_soyad || ''}</span>
+  ${detay.ciftci_telefon ? `<span>Tel: ${detay.ciftci_telefon}</span>` : ''}
+  <span>Muhendis: ${detay.muhendis_ad || ''}</span>
+  <span style="padding:2px 10px;border-radius:20px;font-size:0.8rem;font-weight:600;background:${detay.durum === 'onaylandi' ? '#e8f5ee' : '#fff8e1'};color:${detay.durum === 'onaylandi' ? '#1a7a4a' : '#b7791f'}">${detay.durum === 'onaylandi' ? 'Onaylandi' : 'Taslak'}</span>
 </div>
-${detay.tani ? `<div class="tani">🔍 <b>Tanı / Problem:</b> ${detay.tani}</div>` : ''}
+${detay.tani ? `<div style="background:#f8fdf9;border-left:4px solid #1a7a4a;padding:10px 14px;margin-bottom:16px;font-size:0.95rem">Tani / Problem: ${detay.tani}</div>` : ''}
+<style>
+  table { width:100%;border-collapse:collapse;margin-bottom:8px; }
+  th { background:#e8f5ee;color:#1a7a4a;padding:7px 10px;text-align:left;font-size:0.83rem; }
+  td { padding:7px 10px;border-bottom:1px solid #eee;font-size:0.88rem; }
+  ul { margin:6px 0;padding-left:18px;font-size:0.88rem;line-height:1.8; }
+</style>
 ${sulamaHtml}
-${kulturelHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">🌿 Kültürel Önlemler</h4><ul>${kulturelHtml}</ul>` : ''}
-${biyoHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">🐞 Biyolojik Mücadele</h4><ul>${biyoHtml}</ul>` : ''}
-${takipHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">📋 Takip Noktaları</h4><ul>${takipHtml}</ul>` : ''}
-${detay.ciftciye_not ? `<div class="not">📝 <b>Çiftçiye Not:</b> ${detay.ciftciye_not}</div>` : ''}
-<div class="footer">Ondur Tarım Danışmanlık · ondur.com.tr</div>
-<br><button onclick="window.print()" style="padding:9px 20px;background:#1a7a4a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem">🖨️ PDF İndir / Yazdır</button>
-</body></html>`
+${kulturelHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">Kulturel Onlemler</h4><ul>${kulturelHtml}</ul>` : ''}
+${biyoHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">Biyolojik Mucadele</h4><ul>${biyoHtml}</ul>` : ''}
+${takipHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">Takip Noktalari</h4><ul>${takipHtml}</ul>` : ''}
+${detay.ciftciye_not ? `<div style="margin-top:16px;padding:10px 14px;background:#fff8e1;border-radius:6px;font-size:0.88rem">Ciftciye Not: ${detay.ciftciye_not}</div>` : ''}
+<div style="margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:0.78rem;color:#aaa">Ondur Tarim Danismanlik</div>`
 
-  const w = window.open('', '_blank')
-  w.document.write(html)
-  w.document.close()
+  document.body.appendChild(el)
+  html2pdf()
+    .set({
+      margin: 10,
+      filename: `recete-${detay.id}-${detay.isletme_ad}.pdf`,
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    })
+    .from(el)
+    .save()
+    .finally(() => document.body.removeChild(el))
 }
 
 function receteMesajOlustur(detay) {

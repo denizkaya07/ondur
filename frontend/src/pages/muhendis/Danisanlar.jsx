@@ -90,6 +90,8 @@ export default function Danisanlar() {
   const [tumCiftciler, setTumCiftciler] = useState([])
   const [seciliCiftci, setSeciliCiftci] = useState(null)
   const [seciliIsletme, setSeciliIsletme] = useState([])
+  const [isletmeTalepAcik, setIsletmeTalepAcik] = useState(null)  // ciftci_id
+  const [isletmeTalepSecili, setIsletmeTalepSecili] = useState([])
   const [gonderiyor, setGonderiyor]     = useState(false)
   const [basari, setBasari]             = useState('')
   const [hata, setHata]                 = useState('')
@@ -149,9 +151,10 @@ export default function Danisanlar() {
   const gruplar = useMemo(() => {
     const map = {}
     danisanlar.forEach(d => {
-      const key = d.ciftci_ad || d.isletme?.id
+      const key = d.ciftci_id || d.ciftci_ad || d.isletme?.id
       if (!map[key]) {
         map[key] = {
+          ciftci_id: d.ciftci_id,
           ciftci_ad: d.ciftci_ad,
           ciftci_soyad: d.ciftci_soyad,
           ciftci_mahalle: d.ciftci_mahalle,
@@ -344,8 +347,81 @@ export default function Danisanlar() {
                         <span style={s.isletmeSayisi}>  · {g.isletmeler.length} işletme</span>
                       </p>
                     </div>
-                    <span style={s.ok}>{acik ? '▲' : '▼'}</span>
+                    <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                      <button
+                        style={s.isletmeTalepBtn}
+                        onClick={e => {
+                          e.stopPropagation()
+                          if (isletmeTalepAcik === g.ciftci_id) {
+                            setIsletmeTalepAcik(null)
+                            setIsletmeTalepSecili([])
+                          } else {
+                            setIsletmeTalepAcik(g.ciftci_id)
+                            setIsletmeTalepSecili([])
+                            if (tumCiftciler.length === 0) {
+                              api.get('/ciftci/liste/').then(res => setTumCiftciler(res.data)).catch(() => {})
+                            }
+                          }
+                        }}
+                      >
+                        ➕ İşletme İste
+                      </button>
+                      <span style={s.ok}>{acik ? '▲' : '▼'}</span>
+                    </div>
                   </div>
+
+                  {/* İşletme Talep Paneli */}
+                  {isletmeTalepAcik === g.ciftci_id && (() => {
+                    const ciftciVerisi = tumCiftciler.find(c => c.id === g.ciftci_id)
+                    const mevcutIdler = g.isletmeler.map(x => x?.id)
+                    const yeniIsletmeler = (ciftciVerisi?.isletmeler || []).filter(x => !mevcutIdler.includes(x.id))
+                    return (
+                      <div style={s.isletmeTalepPanel} onClick={e => e.stopPropagation()}>
+                        <p style={{ margin:'0 0 8px', fontWeight:'600', fontSize:'0.88rem', color:'#1a7a4a' }}>
+                          Yeni İşletme Seç
+                        </p>
+                        {tumCiftciler.length === 0
+                          ? <p style={{ fontSize:'0.83rem', color:'#aaa' }}>Yükleniyor…</p>
+                          : yeniIsletmeler.length === 0
+                            ? <p style={{ fontSize:'0.83rem', color:'#aaa' }}>Bu çiftçinin tüm işletmelerine erişiminiz var.</p>
+                            : yeniIsletmeler.map(isl => (
+                                <label key={isl.id} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'5px 0', fontSize:'0.88rem', cursor:'pointer' }}>
+                                  <input type="checkbox"
+                                    checked={isletmeTalepSecili.includes(isl.id)}
+                                    onChange={() => setIsletmeTalepSecili(prev =>
+                                      prev.includes(isl.id) ? prev.filter(x => x !== isl.id) : [...prev, isl.id]
+                                    )}
+                                  />
+                                  <span><strong>{isl.ad}</strong>
+                                    <span style={{ color:'#888', fontSize:'0.8rem' }}> · {isl.cesit_ad || isl.urun_ad || '—'} · {isl.alan_dekar ? `${isl.alan_dekar} da` : ''}</span>
+                                  </span>
+                                </label>
+                              ))
+                        }
+                        {yeniIsletmeler.length > 0 && (
+                          <button
+                            style={{ ...s.talepBtn, marginTop:'8px', width:'auto', padding:'6px 16px' }}
+                            disabled={isletmeTalepSecili.length === 0 || gonderiyor}
+                            onClick={async () => {
+                              setGonderiyor(true)
+                              try {
+                                await api.post('/ciftci/talep/', { isletme_idler: isletmeTalepSecili })
+                                setIsletmeTalepAcik(null)
+                                setIsletmeTalepSecili([])
+                                setBasari(`${isletmeTalepSecili.length} işletme için talep gönderildi.`)
+                              } catch {
+                                setHata('Talep gönderilemedi.')
+                              } finally {
+                                setGonderiyor(false)
+                              }
+                            }}
+                          >
+                            {gonderiyor ? 'Gönderiliyor…' : `Talep Gönder (${isletmeTalepSecili.length})`}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })()}
 
                   {/* İşletme Listesi */}
                   {acik && (
@@ -592,6 +668,15 @@ const s = {
   ilce:         { margin: '3px 0 0', fontSize: '0.83rem', color: '#666' },
   isletmeSayisi:{ color: '#aaa' },
   ok:           { fontSize: '0.75rem', color: '#aaa', flexShrink: 0 },
+  isletmeTalepBtn: {
+    padding: '4px 10px', background: '#e8f5ee', color: '#1a7a4a',
+    border: '1px solid #c8e6d4', borderRadius: '6px', cursor: 'pointer',
+    fontSize: '0.78rem', fontWeight: '500', whiteSpace: 'nowrap',
+  },
+  isletmeTalepPanel: {
+    margin: '6px 0 0', padding: '10px 14px',
+    background: '#f8fdf9', border: '1px solid #d0eada', borderRadius: '8px',
+  },
 
   // İşletme listesi
   isletmeListe: { borderTop: '1px solid #f0f0f0' },

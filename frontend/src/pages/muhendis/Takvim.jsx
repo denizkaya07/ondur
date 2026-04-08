@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import api from '../../services/api'
 import useBreakpoint from '../../hooks/useBreakpoint'
 
@@ -42,6 +43,8 @@ function tarihStr(yil, ay, gun) {
 
 export default function Takvim() {
   const { isMobile } = useBreakpoint()
+  const [searchParams] = useSearchParams()
+  const isletmeParam = searchParams.get('isletme') || ''
   const bugun      = new Date()
   const [yil, setYil]             = useState(bugun.getFullYear())
   const [ay, setAy]               = useState(bugun.getMonth())
@@ -55,7 +58,7 @@ export default function Takvim() {
   const [seciliZiyaret, setSeciliZiyaret] = useState(null)
 
   const [form, setForm] = useState({
-    isletme: '',
+    isletme: isletmeParam,
     tur: 'saha',
     tarih: bugun.toISOString().slice(0, 10),
     saat: '09:00',
@@ -75,6 +78,14 @@ export default function Takvim() {
   }, [yil, ay])
 
   useEffect(() => { yukle() }, [yukle])
+
+  // İşletme parametresi varsa formu otomatik aç
+  useEffect(() => {
+    if (isletmeParam) {
+      setFormAcik(true)
+      api.get('/ciftci/danisanlarim/').then(res => setIsletmeler(res.data)).catch(() => {})
+    }
+  }, [isletmeParam])
 
   const oncekiAy = () => {
     if (ay === 0) { setAy(11); setYil(y => y - 1) }
