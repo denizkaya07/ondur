@@ -53,6 +53,7 @@ export default function Isletmelerim() {
   const [toprakAnalizler, setToprakAnalizler] = useState({})
   const [toprakEkle, setToprakEkle]   = useState(null)
   const [toprakForm, setToprakForm]   = useState({})
+  const [toprakAcik, setToprakAcik]   = useState(null)
   const [fotografAcik, setFotografAcik] = useState(null)
   const [receteler, setReceteler]     = useState(null)
   const [recAcik, setRecAcik]         = useState(null)
@@ -245,7 +246,10 @@ export default function Isletmelerim() {
                   🌱 {i.urun_ad || '—'}{i.cesit_ad ? ` - ${i.cesit_ad}` : ''}
                   {i.alan_dekar ? `  📏 ${parseFloat(i.alan_dekar)} da` : ''}
                   {gunFarki(i.ekim_tarihi) !== null && `  ⏳ ${gunFarki(i.ekim_tarihi)} günlük`}
-                  {i.enlem && i.boylam && <>{' '}<a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 GPS</a></>}
+                  {i.enlem && i.boylam
+                    ? <>{' '}<a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 {parseFloat(i.enlem).toFixed(4)}, {parseFloat(i.boylam).toFixed(4)}</a></>
+                    : <span style={{ color:'#ccc', fontSize:'0.78rem' }}>  📍 GPS yok</span>
+                  }
                 </p>
                 <span style={i.aktif ? s.aktifBadge : s.pasifBadge}>
                   {i.aktif ? 'Aktif' : 'Pasif'}
@@ -271,15 +275,29 @@ export default function Isletmelerim() {
                     <span>{new Date(i.olusturma).toLocaleDateString('tr-TR')}</span>
                   </div>
 
+                  {/* GPS detay */}
+                  {i.enlem && i.boylam && (
+                    <div style={s.detayRow}>
+                      <span style={s.detiket}>📍 GPS</span>
+                      <a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>
+                        {i.enlem}, {i.boylam} — Haritada Gör
+                      </a>
+                    </div>
+                  )}
+
                   {/* Aksiyon butonları */}
                   <div style={s.aksiyonlar}>
                     <button style={{...s.aksiyonBtn, ...(recAcik === i.id ? s.aksiyonAktif : {})}}
-                      onClick={e => { e.stopPropagation(); setRecAcik(recAcik === i.id ? null : i.id); setFotografAcik(null) }}>
+                      onClick={e => { e.stopPropagation(); setRecAcik(recAcik === i.id ? null : i.id); setFotografAcik(null); setToprakAcik(null) }}>
                       📋 Reçeteler {recAcik === i.id ? '▲' : '▼'}
                     </button>
                     <button style={{...s.aksiyonBtn, ...(fotografAcik === i.id ? s.aksiyonAktif : {})}}
-                      onClick={e => { e.stopPropagation(); setFotografAcik(fotografAcik === i.id ? null : i.id); setRecAcik(null) }}>
+                      onClick={e => { e.stopPropagation(); setFotografAcik(fotografAcik === i.id ? null : i.id); setRecAcik(null); setToprakAcik(null) }}>
                       📷 Fotoğraflar {fotografAcik === i.id ? '▲' : '▼'}
+                    </button>
+                    <button style={{...s.aksiyonBtn, ...(toprakAcik === i.id ? s.aksiyonAktif : {})}}
+                      onClick={e => { e.stopPropagation(); setToprakAcik(toprakAcik === i.id ? null : i.id); setRecAcik(null); setFotografAcik(null); setToprakEkle(null) }}>
+                      🧪 Toprak Analizi {toprakAcik === i.id ? '▲' : '▼'}
                     </button>
                   </div>
 
@@ -314,77 +332,81 @@ export default function Isletmelerim() {
                     </div>
                   )}
 
-                  {/* Toprak Analizi */}
-                  <div style={s.toprakBaslikSatir}>
-                    <span style={s.analizBaslik}>🧪 Toprak Analizi</span>
-                    <button style={s.toprakEkleBtn}
-                      onClick={e => { e.stopPropagation(); setToprakEkle(toprakEkle === i.id ? null : i.id); setToprakForm({ tarih: new Date().toISOString().slice(0,10) }) }}>
-                      {toprakEkle === i.id ? '✕ İptal' : '+ Ekle'}
-                    </button>
-                  </div>
+                  {/* Toprak Analizi paneli */}
+                  {toprakAcik === i.id && (
+                    <div style={s.panelIcerik} onClick={e => e.stopPropagation()}>
+                      <div style={s.toprakBaslikSatir}>
+                        <span style={{ fontWeight:'600', fontSize:'0.85rem', color:'#1a7a4a' }}>🧪 Toprak Analizi</span>
+                        <button style={s.toprakEkleBtn}
+                          onClick={e => { e.stopPropagation(); setToprakEkle(toprakEkle === i.id ? null : i.id); setToprakForm({ tarih: new Date().toISOString().slice(0,10) }) }}>
+                          {toprakEkle === i.id ? '✕ İptal' : '+ Ekle'}
+                        </button>
+                      </div>
 
-                  {toprakEkle === i.id && (
-                    <div style={s.toprakForm} onClick={e => e.stopPropagation()}>
-                      <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', marginBottom:'8px' }}>
-                        {[
-                          { key:'tarih', label:'Tarih', type:'date' },
-                          { key:'ph', label:'pH', type:'number' },
-                          { key:'organik_madde', label:'Org. Madde (%)', type:'number' },
-                          { key:'fosfor', label:'Fosfor (kg/da)', type:'number' },
-                          { key:'potasyum', label:'Potasyum (kg/da)', type:'number' },
-                          { key:'kalsiyum', label:'Kalsiyum (kg/da)', type:'number' },
-                          { key:'magnezyum', label:'Magnezyum (kg/da)', type:'number' },
-                          { key:'tuz', label:'Tuz (%)', type:'number' },
-                        ].map(({ key, label, type }) => (
-                          <div key={key} style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
-                            <label style={{ fontSize:'0.72rem', color:'#666' }}>{label}</label>
-                            <input type={type} step="0.01"
-                              value={toprakForm[key] || ''}
-                              onChange={e => setToprakForm(p => ({ ...p, [key]: e.target.value }))}
-                              style={{ width:'110px', padding:'4px 6px', border:'1px solid #d0eada', borderRadius:'4px', fontSize:'0.82rem' }} />
+                      {toprakEkle === i.id && (
+                        <div style={s.toprakForm}>
+                          <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', marginBottom:'8px' }}>
+                            {[
+                              { key:'tarih', label:'Tarih', type:'date' },
+                              { key:'ph', label:'pH', type:'number' },
+                              { key:'organik_madde', label:'Org. Madde (%)', type:'number' },
+                              { key:'fosfor', label:'Fosfor (kg/da)', type:'number' },
+                              { key:'potasyum', label:'Potasyum (kg/da)', type:'number' },
+                              { key:'kalsiyum', label:'Kalsiyum (kg/da)', type:'number' },
+                              { key:'magnezyum', label:'Magnezyum (kg/da)', type:'number' },
+                              { key:'tuz', label:'Tuz (%)', type:'number' },
+                            ].map(({ key, label, type }) => (
+                              <div key={key} style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
+                                <label style={{ fontSize:'0.72rem', color:'#666' }}>{label}</label>
+                                <input type={type} step="0.01"
+                                  value={toprakForm[key] || ''}
+                                  onChange={e => setToprakForm(p => ({ ...p, [key]: e.target.value }))}
+                                  style={{ width:'110px', padding:'4px 6px', border:'1px solid #d0eada', borderRadius:'4px', fontSize:'0.82rem' }} />
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                      <div style={{ marginBottom:'8px' }}>
-                        <label style={{ fontSize:'0.72rem', color:'#666' }}>Notlar</label>
-                        <textarea value={toprakForm.notlar || ''}
-                          onChange={e => setToprakForm(p => ({ ...p, notlar: e.target.value }))}
-                          rows={2}
-                          style={{ display:'block', width:'100%', padding:'4px 6px', border:'1px solid #d0eada', borderRadius:'4px', fontSize:'0.82rem', boxSizing:'border-box', resize:'vertical' }} />
-                      </div>
-                      <button style={s.toprakKaydetBtn}
-                        onClick={async e => {
-                          e.stopPropagation()
-                          const res = await api.post(`/ciftci/isletme/${i.id}/toprak-analiz/`, toprakForm)
-                          setToprakAnalizler(p => ({ ...p, [i.id]: [res.data, ...(p[i.id] || [])] }))
-                          setToprakEkle(null)
-                          setToprakForm({})
-                        }}>
-                        Kaydet
-                      </button>
+                          <div style={{ marginBottom:'8px' }}>
+                            <label style={{ fontSize:'0.72rem', color:'#666' }}>Notlar</label>
+                            <textarea value={toprakForm.notlar || ''}
+                              onChange={e => setToprakForm(p => ({ ...p, notlar: e.target.value }))}
+                              rows={2}
+                              style={{ display:'block', width:'100%', padding:'4px 6px', border:'1px solid #d0eada', borderRadius:'4px', fontSize:'0.82rem', boxSizing:'border-box', resize:'vertical' }} />
+                          </div>
+                          <button style={s.toprakKaydetBtn}
+                            onClick={async e => {
+                              e.stopPropagation()
+                              const res = await api.post(`/ciftci/isletme/${i.id}/toprak-analiz/`, toprakForm)
+                              setToprakAnalizler(p => ({ ...p, [i.id]: [res.data, ...(p[i.id] || [])] }))
+                              setToprakEkle(null)
+                              setToprakForm({})
+                            }}>
+                            Kaydet
+                          </button>
+                        </div>
+                      )}
+
+                      {toprakAnalizler[i.id] === undefined
+                        ? <p style={s.analizYukleniyor}>Yükleniyor…</p>
+                        : toprakAnalizler[i.id].length === 0
+                          ? <p style={s.analizYok}>Henüz toprak analizi girilmemiş.</p>
+                          : toprakAnalizler[i.id].slice(0, 1).map(a => (
+                              <div key={a.id} style={s.analizKart}>
+                                <p style={s.analizBaslik}>Son analiz — {a.tarih}</p>
+                                <div style={s.analizGrid}>
+                                  {a.ph        != null && <span>pH: <b>{a.ph}</b></span>}
+                                  {a.organik_madde != null && <span>Org. Madde: <b>{a.organik_madde}%</b></span>}
+                                  {a.fosfor    != null && <span>Fosfor: <b>{a.fosfor} kg/da</b></span>}
+                                  {a.potasyum  != null && <span>Potasyum: <b>{a.potasyum} kg/da</b></span>}
+                                  {a.kalsiyum  != null && <span>Kalsiyum: <b>{a.kalsiyum} kg/da</b></span>}
+                                  {a.magnezyum != null && <span>Magnezyum: <b>{a.magnezyum} kg/da</b></span>}
+                                  {a.tuz       != null && <span>Tuz: <b>{a.tuz}%</b></span>}
+                                </div>
+                                {a.notlar && <p style={s.analizNot}>{a.notlar}</p>}
+                              </div>
+                            ))
+                      }
                     </div>
                   )}
-
-                  {toprakAnalizler[i.id] === undefined
-                    ? <p style={s.analizYukleniyor}>Yükleniyor…</p>
-                    : toprakAnalizler[i.id].length === 0
-                      ? <p style={s.analizYok}>Henüz toprak analizi girilmemiş.</p>
-                      : toprakAnalizler[i.id].slice(0, 1).map(a => (
-                          <div key={a.id} style={s.analizKart}>
-                            <p style={s.analizBaslik}>Son analiz — {a.tarih}</p>
-                            <div style={s.analizGrid}>
-                              {a.ph        != null && <span>pH: <b>{a.ph}</b></span>}
-                              {a.organik_madde != null && <span>Org. Madde: <b>{a.organik_madde}%</b></span>}
-                              {a.fosfor    != null && <span>Fosfor: <b>{a.fosfor} kg/da</b></span>}
-                              {a.potasyum  != null && <span>Potasyum: <b>{a.potasyum} kg/da</b></span>}
-                              {a.kalsiyum  != null && <span>Kalsiyum: <b>{a.kalsiyum} kg/da</b></span>}
-                              {a.magnezyum != null && <span>Magnezyum: <b>{a.magnezyum} kg/da</b></span>}
-                              {a.tuz       != null && <span>Tuz: <b>{a.tuz}%</b></span>}
-                            </div>
-                            {a.notlar && <p style={s.analizNot}>{a.notlar}</p>}
-                          </div>
-                        ))
-                  }
                 </div>
               )}
             </div>
