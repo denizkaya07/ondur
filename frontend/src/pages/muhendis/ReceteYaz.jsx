@@ -672,8 +672,8 @@ ${analizler.length === 0
     <div style={{ ...s.sayfa, padding: isMobile ? '1rem' : '1.5rem 2rem' }}>
       {/* Üst bar */}
       <div style={s.ustBar}>
-        <button style={s.geriBtn} onClick={() => navigate('/muhendis/receteler')}>
-          ← Reçeteler
+        <button style={s.geriBtn} onClick={() => navigate(-1)}>
+          ← Geri
         </button>
         <h2 style={s.baslik}>Yeni Reçete</h2>
         <button style={s.kaydetBtn} onClick={kaydet} disabled={kaydediyor}>

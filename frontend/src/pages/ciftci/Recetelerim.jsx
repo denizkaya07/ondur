@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import { AuthContext } from '../../context/AuthContext'
 import useBreakpoint from '../../hooks/useBreakpoint'
+import { recetePdfIndir } from '../../services/recetePdf'
 
 const DURUM_RENK = {
   taslak:    { bg: '#fff8e1', color: '#b7791f' },
@@ -95,6 +96,15 @@ export default function Recetelerim() {
                     <p style={s.alt}>Yükleniyor...</p>
                   ) : detay ? (
                     <>
+                    <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'8px' }}>
+                      <button
+                        style={s.pdfBtn}
+                        onClick={e => { e.stopPropagation(); recetePdfIndir(detay) }}
+                      >
+                        PDF İndir
+                      </button>
+                    </div>
+                    <>
                       <div style={s.detayRow}>
                         <span style={s.detiket}>Uygulama Yöntemi</span>
                         <span>{detay.uygulama_yontemi}</span>
@@ -128,6 +138,7 @@ export default function Recetelerim() {
                         </div>
                       )}
                     </>
+                    </>
                   ) : null}
                 </div>
               )}
@@ -153,6 +164,7 @@ const s = {
   alt:        { margin: '4px 0 0', fontSize: '0.83rem', color: '#888' },
   badge:      { padding: '3px 10px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '500', whiteSpace: 'nowrap' },
   detay:      { marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f0f0f0' },
+  pdfBtn:     { padding: '5px 14px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: '500' },
   detayRow:   { display: 'flex', gap: '12px', padding: '4px 0', fontSize: '0.9rem' },
   detiket:    { color: '#888', minWidth: '140px' },
   adimlar:      { marginTop: '10px' },

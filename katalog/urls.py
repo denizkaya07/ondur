@@ -17,5 +17,7 @@ urlpatterns = [
     # Bayii
     path('bayii/urunlerim/', views.BayiiUrunListView.as_view(), name='bayii-urun-list'),
     path('bayii/analiz/', views.BayiiAnalizView.as_view(), name='bayii-analiz'),
-    path('bayii/bolgem/', views.BayiiBolgesiView.as_view(), name='bayii-bolge'),
+    path('bayii/bolgem/',       views.BayiiBolgesiView.as_view(),     name='bayii-bolge'),
+    path('bayii/listele/',      views.BayiiListesiView.as_view(),     name='bayii-listele'),
+    path('bayii/musterilerim/', views.BayiiMusterileriView.as_view(), name='bayii-musteriler'),
 ]

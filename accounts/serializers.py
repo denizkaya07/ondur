@@ -37,15 +37,61 @@ class MuhendisIlceSerializer(serializers.ModelSerializer):
 
 
 class KullaniciSerializer(serializers.ModelSerializer):
-    ilceler = MuhendisIlceSerializer(many=True, read_only=True)
+    ilceler    = MuhendisIlceSerializer(many=True, read_only=True)
+    rol_profil = serializers.SerializerMethodField()
 
     class Meta:
         model  = Kullanici
         fields = [
             'id', 'username', 'first_name', 'last_name',
-            'telefon', 'rol', 'il', 'ilce', 'ilceler'
+            'telefon', 'rol', 'il', 'ilce', 'ilceler', 'rol_profil'
         ]
         read_only_fields = ['rol']
+
+    def get_rol_profil(self, obj):
+        if obj.rol == 'ciftci':
+            try:
+                p = obj.ciftci_profili
+                return {
+                    'kimlik_kodu': p.kimlik_kodu_formatli,
+                    'cks_no':      p.cks_no,
+                    'mahalle':     p.mahalle,
+                    'ilce':        p.ilce,
+                    'il':          p.il,
+                    'telefon':     p.telefon,
+                    'isletme_sayisi': p.isletmeler.filter(aktif=True).count(),
+                }
+            except Exception:
+                return None
+        if obj.rol == 'bayii':
+            try:
+                p = obj.bayii_profili
+                return {
+                    'firma_adi': p.firma_adi,
+                    'ruhsat_no': p.ruhsat_no,
+                    'il':        p.il,
+                    'ilce':      p.ilce,
+                    'telefon':   p.telefon,
+                }
+            except Exception:
+                return None
+        if obj.rol == 'uretici':
+            try:
+                p = obj.uretici_profili
+                return {
+                    'firma_adi': p.firma_adi,
+                    'vergi_no':  p.vergi_no,
+                    'adres':     p.adres,
+                    'yetkili':   p.yetkili,
+                }
+            except Exception:
+                return None
+        if obj.rol == 'muhendis':
+            ilceler = obj.ilceler.filter(aktif=True).values_list('ilce', 'il')
+            return {
+                'hizmet_ilceleri': [f'{ilce} / {il}' for ilce, il in ilceler],
+            }
+        return None
 
 
 class TelefonTokenSerializer(serializers.Serializer):

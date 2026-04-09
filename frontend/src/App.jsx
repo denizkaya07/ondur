@@ -19,6 +19,7 @@ const Isletmelerim = lazy(() => import('./pages/ciftci/Isletmelerim'))
 const Talepler     = lazy(() => import('./pages/ciftci/Talepler'))
 const Katalog      = lazy(() => import('./pages/uretici/Katalog'))
 const Analiz       = lazy(() => import('./pages/bayii/Analiz'))
+const Musterilerim = lazy(() => import('./pages/bayii/Musterilerim'))
 const Urunlerim    = lazy(() => import('./pages/bayii/Urunlerim'))
 
 const Yukleniyor = () => (
@@ -70,8 +71,9 @@ export default function App() {
       <Route path="/uretici" element={<KorunanRota rol="uretici"><Katalog /></KorunanRota>} />
 
       {/* Bayii */}
-      <Route path="/bayii"         element={<KorunanRota rol="bayii"><Analiz /></KorunanRota>} />
-      <Route path="/bayii/urunler" element={<KorunanRota rol="bayii"><Urunlerim /></KorunanRota>} />
+      <Route path="/bayii"               element={<KorunanRota rol="bayii"><Analiz /></KorunanRota>} />
+      <Route path="/bayii/musteriler"   element={<KorunanRota rol="bayii"><Musterilerim /></KorunanRota>} />
+      <Route path="/bayii/urunler"      element={<KorunanRota rol="bayii"><Urunlerim /></KorunanRota>} />
 
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

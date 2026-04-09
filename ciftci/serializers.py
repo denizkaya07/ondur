@@ -95,6 +95,7 @@ class MuhendisIsletmeSerializer(serializers.ModelSerializer):
 class IsletmeFotografSerializer(serializers.ModelSerializer):
     yukleyen_ad  = serializers.CharField(source='yukleyen.get_full_name', read_only=True)
     yukleyen_rol = serializers.CharField(source='yukleyen.rol', read_only=True)
+    fotograf     = serializers.ImageField(use_url=True)
 
     class Meta:
         model  = IsletmeFotograf
@@ -113,11 +114,16 @@ class ToprakAnalizSerializer(serializers.ModelSerializer):
 from .models import CiftciBayii
 
 class CiftciBayiiSerializer(serializers.ModelSerializer):
-    bayii_adi = serializers.CharField(source='bayii.firma_adi', read_only=True)
-    ciftci_ad = serializers.CharField(source='ciftci.ad', read_only=True)
+    bayii_adi     = serializers.CharField(source='bayii.firma_adi', read_only=True)
+    bayii_il      = serializers.CharField(source='bayii.il',       read_only=True)
+    bayii_ilce    = serializers.CharField(source='bayii.ilce',     read_only=True)
+    bayii_telefon = serializers.CharField(source='bayii.telefon',  read_only=True)
+    ciftci_ad     = serializers.CharField(source='ciftci.ad',      read_only=True)
+    ciftci_soyad  = serializers.CharField(source='ciftci.soyad',   read_only=True)
 
     class Meta:
         model  = CiftciBayii
-        fields = ['id', 'ciftci', 'ciftci_ad', 'bayii', 'bayii_adi',
+        fields = ['id', 'ciftci', 'ciftci_ad', 'ciftci_soyad',
+                  'bayii', 'bayii_adi', 'bayii_il', 'bayii_ilce', 'bayii_telefon',
                   'baslatan', 'durum', 'talep_tarihi', 'yanit_tarihi', 'aktif']
         read_only_fields = ['baslatan', 'durum', 'talep_tarihi', 'yanit_tarihi']

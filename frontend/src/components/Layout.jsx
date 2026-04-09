@@ -3,6 +3,14 @@ import { useAuth } from '../context/AuthContext'
 import PropTypes from 'prop-types'
 import { useNavigate, useLocation } from 'react-router-dom'
 import useBreakpoint from '../hooks/useBreakpoint'
+import OfflineBanner from './OfflineBanner'
+
+const ROL_ETIKET = {
+  muhendis: 'Mühendis',
+  ciftci:   'Çiftçi',
+  uretici:  'Üretici',
+  bayii:    'Bayii',
+}
 
 const menuler = {
   muhendis: [
@@ -20,6 +28,7 @@ const menuler = {
   ],
   bayii: [
     { yol: '/bayii',              etiket: 'Analiz' },
+    { yol: '/bayii/musteriler',   etiket: 'Müşterilerim' },
     { yol: '/bayii/urunler',      etiket: 'Ürünlerim' },
   ],
 }
@@ -64,7 +73,8 @@ export default function Layout({ children }) {
                 ))}
                 <div style={s.dropdownAyrac} />
                 <div style={s.dropdownItem} onClick={(e) => { e.stopPropagation(); git('/profil') }}>
-                  👤 {kullanici?.first_name || kullanici?.username}
+                  {kullanici?.first_name || kullanici?.username}
+                  <span style={{...s.rolBadge, marginLeft:'8px'}}>{ROL_ETIKET[kullanici?.rol] || kullanici?.rol}</span>
                 </div>
                 <div style={{ ...s.dropdownItem, color: '#e05' }} onClick={(e) => { e.stopPropagation(); cikisYap() }}>
                   Çıkış
@@ -93,6 +103,7 @@ export default function Layout({ children }) {
               <span style={s.kullaniciAd} onClick={() => navigate('/profil')}>
                 {kullanici?.first_name || kullanici?.username}
               </span>
+              <span style={s.rolBadge}>{ROL_ETIKET[kullanici?.rol] || kullanici?.rol}</span>
               <button style={s.cikis} onClick={cikisYap}>Çıkış</button>
             </div>
           </>
@@ -102,6 +113,7 @@ export default function Layout({ children }) {
       <main style={s.icerik}>
         {children}
       </main>
+      <OfflineBanner />
     </div>
   )
 }
@@ -132,6 +144,7 @@ const s = {
   },
   sag: { display: 'flex', alignItems: 'center', gap: '12px' },
   kullaniciAd: { fontSize: '0.9rem', color: '#555', cursor: 'pointer', textDecoration: 'underline dotted' },
+  rolBadge:    { padding: '2px 8px', borderRadius: '20px', fontSize: '0.75rem', background: '#e8f5ee', color: '#1a7a4a', fontWeight: '500' },
   cikis: {
     padding: '6px 14px', background: 'transparent', border: '1px solid #ddd',
     borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem', color: '#888',

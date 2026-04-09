@@ -165,8 +165,28 @@ function recetePdfIndir(detay) {
   const takipHtml = adimlar.filter(a => a.notlar?.includes('[takip]'))
     .map(a => `<li>${a.uygulama_tarihi ? a.uygulama_tarihi + ' — ' : ''}${a.tanim}</li>`).join('')
 
+  const thSt  = 'background:#e8f5ee;color:#1a7a4a;padding:7px 10px;text-align:left;font-size:0.83rem;'
+  const tdSt  = 'padding:7px 10px;border-bottom:1px solid #eee;font-size:0.88rem;'
+  const tblSt = 'width:100%;border-collapse:collapse;margin-bottom:8px;'
+  const liSt  = 'font-size:0.88rem;line-height:1.8;'
+
+  const sulamaHtmlFix = adimlar.filter(a => a.notlar?.includes('[sulama]')).map((a, i) => {
+    const kalemler = (a.kalemler || []).map(k => `
+      <tr>
+        <td style="${tdSt}">${k.ilac_ad || k.gubre_ad || '—'}</td>
+        <td style="${tdSt}">${k.doz_dekar}</td>
+        <td style="${tdSt}">${k.birim}</td>
+        <td style="${tdSt}">${k.toplam_miktar || '—'}</td>
+      </tr>`).join('')
+    return `
+      <h4 style="color:#1a7a4a;margin:16px 0 6px">💧 ${i+1}. Sulama${a.uygulama_tarihi ? ' — ' + a.uygulama_tarihi : ''}</h4>
+      <table style="${tblSt}"><thead><tr>
+        <th style="${thSt}">Ilac / Gubre</th><th style="${thSt}">Doz/da</th><th style="${thSt}">Birim</th><th style="${thSt}">Toplam</th>
+      </tr></thead><tbody>${kalemler}</tbody></table>`
+  }).join('')
+
   const el = document.createElement('div')
-  el.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:#fff;padding:32px;font-family:Arial,sans-serif;color:#222;'
+  el.style.cssText = 'width:794px;background:#fff;padding:32px;font-family:Arial,sans-serif;color:#222;'
   el.innerHTML = `
 <h1 style="color:#1a7a4a;font-size:1.4rem;margin:0 0 4px">Ondur Recete #${detay.id}</h1>
 <div style="display:flex;flex-wrap:wrap;gap:8px 20px;color:#555;font-size:0.88rem;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #1a7a4a;">
@@ -178,30 +198,28 @@ function recetePdfIndir(detay) {
   <span style="padding:2px 10px;border-radius:20px;font-size:0.8rem;font-weight:600;background:${detay.durum === 'onaylandi' ? '#e8f5ee' : '#fff8e1'};color:${detay.durum === 'onaylandi' ? '#1a7a4a' : '#b7791f'}">${detay.durum === 'onaylandi' ? 'Onaylandi' : 'Taslak'}</span>
 </div>
 ${detay.tani ? `<div style="background:#f8fdf9;border-left:4px solid #1a7a4a;padding:10px 14px;margin-bottom:16px;font-size:0.95rem">Tani / Problem: ${detay.tani}</div>` : ''}
-<style>
-  table { width:100%;border-collapse:collapse;margin-bottom:8px; }
-  th { background:#e8f5ee;color:#1a7a4a;padding:7px 10px;text-align:left;font-size:0.83rem; }
-  td { padding:7px 10px;border-bottom:1px solid #eee;font-size:0.88rem; }
-  ul { margin:6px 0;padding-left:18px;font-size:0.88rem;line-height:1.8; }
-</style>
-${sulamaHtml}
-${kulturelHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">Kulturel Onlemler</h4><ul>${kulturelHtml}</ul>` : ''}
-${biyoHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">Biyolojik Mucadele</h4><ul>${biyoHtml}</ul>` : ''}
-${takipHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">Takip Noktalari</h4><ul>${takipHtml}</ul>` : ''}
+${sulamaHtmlFix}
+${kulturelHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">Kulturel Onlemler</h4><ul style="margin:6px 0;padding-left:18px">${kulturelHtml.replace(/<li>/g,`<li style="${liSt}">`)}</ul>` : ''}
+${biyoHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">Biyolojik Mucadele</h4><ul style="margin:6px 0;padding-left:18px">${biyoHtml.replace(/<li>/g,`<li style="${liSt}">`)}</ul>` : ''}
+${takipHtml ? `<h4 style="color:#1a7a4a;margin:16px 0 6px">Takip Noktalari</h4><ul style="margin:6px 0;padding-left:18px">${takipHtml.replace(/<li>/g,`<li style="${liSt}">`)}</ul>` : ''}
 ${detay.ciftciye_not ? `<div style="margin-top:16px;padding:10px 14px;background:#fff8e1;border-radius:6px;font-size:0.88rem">Ciftciye Not: ${detay.ciftciye_not}</div>` : ''}
 <div style="margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:0.78rem;color:#aaa">Ondur Tarim Danismanlik</div>`
 
+  const overlay = document.createElement('div')
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:9999;color:#fff;font-size:1.1rem;font-family:Arial,sans-serif;'
+  overlay.textContent = 'PDF hazırlanıyor…'
+  document.body.appendChild(overlay)
   document.body.appendChild(el)
   html2pdf()
     .set({
       margin: 10,
-      filename: `recete-${detay.id}-${detay.isletme_ad}.pdf`,
-      html2canvas: { scale: 2, useCORS: true, logging: false },
+      filename: `recete-${detay.id}-${detay.isletme_ad || detay.id}.pdf`,
+      html2canvas: { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     })
     .from(el)
     .save()
-    .finally(() => document.body.removeChild(el))
+    .finally(() => { document.body.removeChild(el); document.body.removeChild(overlay) })
 }
 
 function receteMesajOlustur(detay) {

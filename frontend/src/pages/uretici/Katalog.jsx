@@ -1,8 +1,41 @@
 /* eslint react/prop-types: 0 */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import PropTypes from 'prop-types'
+import * as XLSX from 'xlsx'
 import api from '../../services/api'
 import useBreakpoint from '../../hooks/useBreakpoint'
+
+const ILAC_EXCEL_SUTUNLAR = ['ticari_ad','kategori','formulasyon','ruhsat_no','phi_gun','endikasyon','doz_min','doz_max','doz_birimi','uygulama_yontemi','ambalaj_hacmi','ambalaj_birimi','ambalaj_birim']
+const GUBRE_EXCEL_SUTUNLAR = ['ticari_ad','tur','formulasyon','doz_min','doz_max','doz_birimi','uygulama_yontemi','ambalaj_hacmi','ambalaj_birimi','ambalaj_birim']
+
+function excelSikayet(tip) {
+  const sutunlar = tip === 'ilac' ? ILAC_EXCEL_SUTUNLAR : GUBRE_EXCEL_SUTUNLAR
+  const ws = XLSX.utils.aoa_to_sheet([sutunlar])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, tip === 'ilac' ? 'İlaçlar' : 'Gübreler')
+  XLSX.writeFile(wb, `${tip}_sablonu.xlsx`)
+}
+
+async function excelYukle(tip, dosya, api, onBitti, onHata) {
+  const sutunlar = tip === 'ilac' ? ILAC_EXCEL_SUTUNLAR : GUBRE_EXCEL_SUTUNLAR
+  const url = tip === 'ilac' ? '/katalog/uretici/ilaclarim/' : '/katalog/uretici/gubrelerim/'
+  const buf = await dosya.arrayBuffer()
+  const wb  = XLSX.read(buf)
+  const ws  = wb.Sheets[wb.SheetNames[0]]
+  const satirlar = XLSX.utils.sheet_to_json(ws, { header: sutunlar, range: 1, defval: '' })
+  let hata = [], basari = 0
+  for (const satir of satirlar) {
+    if (!satir.ticari_ad) continue
+    try {
+      await api.post(url, satir)
+      basari++
+    } catch (e) {
+      hata.push(`${satir.ticari_ad}: ${JSON.stringify(e.response?.data || e.message)}`)
+    }
+  }
+  if (hata.length) onHata(`${basari} eklendi, ${hata.length} hata:\n${hata.slice(0,3).join('\n')}`)
+  else onBitti(basari)
+}
 
 const KATEGORI = ['fungisit','insektisit','herbisit','akarisit','nematisit','rodentisit','mollusisit','diger']
 const KATEGORI_ETIKET = {
@@ -259,7 +292,10 @@ export default function Katalog() {
   const [gubreler, setGubreler] = useState([])
   const [yukleniyor, setYukleniyor] = useState(true)
   const [secili, setSecili]     = useState(null)
-  const [modal, setModal]       = useState(null) // null | { tip, mevcut }
+  const [modal, setModal]       = useState(null)
+  const [excelMesaj, setExcelMesaj] = useState('')
+  const [excelYukleniyor, setExcelYukleniyor] = useState(false)
+  const dosyaRef = useRef()
 
   const yukle = () => {
     setYukleniyor(true)
@@ -300,7 +336,7 @@ export default function Katalog() {
     <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <div style={s.ustBar}>
         <h2 style={s.baslik}>Katalogum</h2>
-        <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+        <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
           <div style={s.ozet}>
             <span style={s.ozetChip}>{ilaclar.length} ilaç</span>
             <span style={s.ozetChip}>{gubreler.length} gübre</span>
@@ -308,11 +344,41 @@ export default function Katalog() {
               {[...ilaclar, ...gubreler].filter(x => x.onaylandi).length} onaylı
             </span>
           </div>
+          <button style={s.excelBtn} onClick={() => excelSikayet(tab)}>
+            Şablon İndir
+          </button>
+          <button style={s.excelBtn} disabled={excelYukleniyor} onClick={() => dosyaRef.current?.click()}>
+            {excelYukleniyor ? 'Yükleniyor…' : 'Excel Yükle'}
+          </button>
+          <input
+            ref={dosyaRef}
+            type="file"
+            accept=".xlsx,.xls"
+            style={{display:'none'}}
+            onChange={async e => {
+              const dosya = e.target.files?.[0]
+              if (!dosya) return
+              e.target.value = ''
+              setExcelYukleniyor(true)
+              setExcelMesaj('')
+              await excelYukle(
+                tab, dosya, api,
+                (n) => { setExcelMesaj(`${n} ürün eklendi.`); yukle() },
+                (m) => setExcelMesaj(m)
+              )
+              setExcelYukleniyor(false)
+            }}
+          />
           <button style={s.ekleBtn} onClick={() => setModal({ tip: tab, mevcut: null })}>
             + {tab === 'ilac' ? 'İlaç' : 'Gübre'} Ekle
           </button>
         </div>
       </div>
+      {excelMesaj && (
+        <div style={{marginBottom:'1rem', padding:'8px 14px', background:'#f0faf5', border:'1px solid #c8e6d4', borderRadius:'8px', fontSize:'0.85rem', color:'#1a7a4a', whiteSpace:'pre-wrap'}}>
+          {excelMesaj}
+        </div>
+      )}
 
       <div style={s.tabBar}>
         <button
@@ -371,6 +437,7 @@ const s = {
   ozetChip:  { padding: '3px 10px', borderRadius: '20px', fontSize: '0.78rem', background: '#f0f0f0', color: '#555' },
   ozetOnay:  { background: '#e8f5ee', color: '#1a7a4a' },
   ekleBtn:   { padding: '8px 16px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.88rem', fontWeight: '600' },
+  excelBtn:  { padding: '8px 14px', background: '#fff', color: '#555', border: '1px solid #ccc', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' },
   tabBar:    { display: 'flex', gap: '4px', marginBottom: '1.25rem', borderBottom: '2px solid #eee', paddingBottom: '0' },
   tabBtn:    { padding: '8px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: '#888', borderBottom: '2px solid transparent', marginBottom: '-2px' },
   tabAktif:  { color: '#1a7a4a', fontWeight: '600', borderBottomColor: '#1a7a4a' },

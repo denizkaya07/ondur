@@ -1,5 +1,38 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import * as XLSX from 'xlsx'
 import api from '../../services/api'
+
+function excelSablon() {
+  const ws = XLSX.utils.aoa_to_sheet([['tip', 'ticari_ad'], ['ilac', 'Örnek İlaç Adı'], ['gubre', 'Örnek Gübre Adı']])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Ürünler')
+  XLSX.writeFile(wb, 'bayii_urun_sablonu.xlsx')
+}
+
+async function excelYukle(dosya, katalog, api, onBitti, onHata) {
+  const buf    = await dosya.arrayBuffer()
+  const wb     = XLSX.read(buf)
+  const ws     = wb.Sheets[wb.SheetNames[0]]
+  const satirlar = XLSX.utils.sheet_to_json(ws, { defval: '' })
+  let basari = 0, hatalar = []
+  for (const satir of satirlar) {
+    const tip  = (satir.tip || '').toLowerCase().trim()
+    const isim = (satir.ticari_ad || '').trim()
+    if (!isim) continue
+    const liste = tip === 'gubre' ? katalog.gubreler : katalog.ilaclar
+    const bulunan = liste.find(u => u.ticari_ad.toLowerCase() === isim.toLowerCase())
+    if (!bulunan) { hatalar.push(`Bulunamadı: "${isim}"`); continue }
+    const payload = tip === 'gubre' ? { gubre: bulunan.id, ilac: null } : { ilac: bulunan.id, gubre: null }
+    try {
+      await api.post('/katalog/bayii/urunlerim/', payload)
+      basari++
+    } catch (e) {
+      hatalar.push(`${isim}: ${JSON.stringify(e.response?.data || e.message)}`)
+    }
+  }
+  if (hatalar.length) onHata(`${basari} eklendi, ${hatalar.length} sorun:\n${hatalar.slice(0, 3).join('\n')}`)
+  else onBitti(basari)
+}
 
 export default function Urunlerim() {
   const [urunler, setUrunler]     = useState([])
@@ -10,6 +43,9 @@ export default function Urunlerim() {
   const [kaydediyor, setKaydediyor] = useState(false)
   const [hata, setHata]           = useState('')
   const [hataGlobal, setHataGlobal] = useState('')
+  const [excelMesaj, setExcelMesaj]       = useState('')
+  const [excelYukleniyor, setExcelYukleniyor] = useState(false)
+  const dosyaRef = useRef()
 
   const yukle = () => {
     setYukleniyor(true)
@@ -67,10 +103,40 @@ export default function Urunlerim() {
     <div style={s.kapsayici}>
       <div style={s.ustBar}>
         <h2 style={s.baslik}>Ürünlerim</h2>
-        <button style={s.ekleBtn} onClick={() => { setFormAcik(true); setHata('') }}>
-          + Ürün Ekle
-        </button>
+        <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+          <button style={s.excelBtn} onClick={excelSablon}>Şablon İndir</button>
+          <button style={s.excelBtn} disabled={excelYukleniyor} onClick={() => dosyaRef.current?.click()}>
+            {excelYukleniyor ? 'Yükleniyor…' : 'Excel Yükle'}
+          </button>
+          <input
+            ref={dosyaRef}
+            type="file"
+            accept=".xlsx,.xls"
+            style={{display:'none'}}
+            onChange={async e => {
+              const dosya = e.target.files?.[0]
+              if (!dosya) return
+              e.target.value = ''
+              setExcelYukleniyor(true)
+              setExcelMesaj('')
+              await excelYukle(
+                dosya, katalog, api,
+                (n) => { setExcelMesaj(`${n} ürün eklendi.`); yukle() },
+                (m) => setExcelMesaj(m)
+              )
+              setExcelYukleniyor(false)
+            }}
+          />
+          <button style={s.ekleBtn} onClick={() => { setFormAcik(true); setHata('') }}>
+            + Ürün Ekle
+          </button>
+        </div>
       </div>
+      {excelMesaj && (
+        <div style={{marginBottom:'1rem', padding:'8px 14px', background:'#f0faf5', border:'1px solid #c8e6d4', borderRadius:'8px', fontSize:'0.85rem', color:'#1a7a4a', whiteSpace:'pre-wrap'}}>
+          {excelMesaj}
+        </div>
+      )}
 
       {formAcik && (
         <div style={s.panel}>
@@ -139,6 +205,7 @@ const s = {
   ustBar:    { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' },
   baslik:    { fontSize: '1.5rem', fontWeight: '500', margin: 0, color: '#1a7a4a' },
   ekleBtn:   { padding: '8px 16px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' },
+  excelBtn:  { padding: '8px 14px', background: '#fff', color: '#555', border: '1px solid #ccc', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' },
   yuklenme:  { padding: '2rem', textAlign: 'center', color: '#888' },
   bos:       { padding: '3rem', textAlign: 'center', color: '#aaa', background: '#f9f9f9', borderRadius: '10px' },
   liste:     { display: 'flex', flexDirection: 'column', gap: '8px' },

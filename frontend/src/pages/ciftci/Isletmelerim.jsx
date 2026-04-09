@@ -4,6 +4,7 @@ import api from '../../services/api'
 import { AuthContext } from '../../context/AuthContext'
 import IsletmeFotografPanel from '../../components/IsletmeFotografPanel'
 import useBreakpoint from '../../hooks/useBreakpoint'
+import { recetePdfIndir } from '../../services/recetePdf'
 
 const URUN_EMOJI = {
   domates:'🩷', cherry:'🍒', biber:'🫑', patlican:'🍆',
@@ -57,6 +58,8 @@ export default function Isletmelerim() {
   const [fotografAcik, setFotografAcik] = useState(null)
   const [receteler, setReceteler]     = useState(null)
   const [recAcik, setRecAcik]         = useState(null)
+  const [recDetay, setRecDetay]       = useState({}) // id -> detay
+  const [recSecili, setRecSecili]     = useState(null)
   const [gpsAcik, setGpsAcik]         = useState(null)
   const [gpsForm, setGpsForm]         = useState({ enlem: '', boylam: '' })
   const [gpsKaydediyor, setGpsKaydediyor] = useState(false)
@@ -243,16 +246,10 @@ export default function Isletmelerim() {
             >
               <div style={s.kartUst}>
                 <p style={s.isletmeBaslik}>
-                  {urunEmoji(i.urun_ad, i.cesit_ad)}{' '}
-                  [ 🏢 {i.ad} ]
-                  {'  -----  '}
-                  🌱 {i.urun_ad || '—'}{i.cesit_ad ? ` - ${i.cesit_ad}` : ''}
-                  {i.alan_dekar ? `  📏 ${parseFloat(i.alan_dekar)} da` : ''}
-                  {gunFarki(i.ekim_tarihi) !== null && `  ⏳ ${gunFarki(i.ekim_tarihi)} günlük`}
-                  {'  '}{i.enlem && i.boylam
-                    ? <a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 {parseFloat(i.enlem).toFixed(5)}, {parseFloat(i.boylam).toFixed(5)}</a>
-                    : <span style={{ color:'#e07000', fontSize:'0.78rem', fontWeight:'500' }}>📍 GPS girilmemiş</span>
-                  }
+                  {i.ad}
+                  {(i.urun_ad || i.cesit_ad) && <>{'  '}{i.urun_ad || ''}{i.cesit_ad ? ` ${i.cesit_ad}` : ''}</>}
+                  {i.alan_dekar && <>{'  '}{parseFloat(i.alan_dekar)} da</>}
+                  {gunFarki(i.ekim_tarihi) !== null && <>{'  '}{gunFarki(i.ekim_tarihi)} günlük</>}
                 </p>
                 <span style={i.aktif ? s.aktifBadge : s.pasifBadge}>
                   {i.aktif ? 'Aktif' : 'Pasif'}
@@ -316,12 +313,47 @@ export default function Isletmelerim() {
                         : receteler.filter(r => r.isletme === i.id).length === 0
                           ? <p style={s.analizYok}>Bu işletme için henüz reçete yok.</p>
                           : receteler.filter(r => r.isletme === i.id).map(r => (
-                              <div key={r.id} style={s.receteKart}>
-                                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                                  <span style={{ fontWeight:'500', fontSize:'0.88rem' }}>{r.tani || '(Tanı yok)'}</span>
-                                  <span style={{ fontSize:'0.78rem', color:'#888' }}>{r.tarih}</span>
+                              <div key={r.id}>
+                                <div
+                                  style={{ ...s.receteKart, ...(recSecili === r.id ? { borderColor:'#1a7a4a' } : {}), cursor:'pointer' }}
+                                  onClick={async () => {
+                                    if (recSecili === r.id) { setRecSecili(null); return }
+                                    setRecSecili(r.id)
+                                    if (!recDetay[r.id]) {
+                                      const res = await api.get(`/recete/${r.id}/`)
+                                      setRecDetay(p => ({ ...p, [r.id]: res.data }))
+                                    }
+                                  }}
+                                >
+                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                                    <span style={{ fontWeight:'500', fontSize:'0.88rem' }}>{r.tani || '(Tanı yok)'}</span>
+                                    <span style={{ fontSize:'0.78rem', color:'#888' }}>{r.tarih}</span>
+                                  </div>
+                                  <p style={{ margin:'2px 0 0', fontSize:'0.78rem', color:'#888' }}>{r.muhendis_ad}</p>
                                 </div>
-                                <p style={{ margin:'2px 0 0', fontSize:'0.78rem', color:'#888' }}>👷 {r.muhendis_ad}</p>
+                                {recSecili === r.id && recDetay[r.id] && (
+                                  <div style={{ padding:'8px 4px 4px' }}>
+                                    <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'6px' }}>
+                                      <button
+                                        style={{ padding:'4px 12px', background:'#1a7a4a', color:'#fff', border:'none', borderRadius:'6px', cursor:'pointer', fontSize:'0.8rem' }}
+                                        onClick={() => recetePdfIndir(recDetay[r.id])}
+                                      >
+                                        PDF İndir
+                                      </button>
+                                    </div>
+                                    {(recDetay[r.id].adimlar || []).filter(a => a.notlar?.includes('[sulama]')).map((a, idx) => (
+                                      <div key={a.id} style={{ marginBottom:'6px', fontSize:'0.82rem' }}>
+                                        <p style={{ margin:'0 0 2px', fontWeight:'500', color:'#1a7a4a' }}>{idx+1}. Sulama {a.uygulama_tarihi ? `— ${a.uygulama_tarihi}` : ''}</p>
+                                        {(a.kalemler || []).map(k => (
+                                          <p key={k.id} style={{ margin:'0 0 1px', paddingLeft:'10px', color:'#555' }}>• {k.ilac_ad || k.gubre_ad} — {k.doz_dekar} {k.birim}</p>
+                                        ))}
+                                      </div>
+                                    ))}
+                                    {recDetay[r.id].ciftciye_not && (
+                                      <p style={{ margin:'4px 0 0', fontSize:'0.8rem', color:'#888', fontStyle:'italic' }}>{recDetay[r.id].ciftciye_not}</p>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             ))
                       }

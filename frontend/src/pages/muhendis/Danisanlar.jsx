@@ -1,9 +1,12 @@
 import { useEffect, useState, useMemo, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
+import { recetePdfIndir } from '../../services/recetePdf'
+import { offlineApi } from '../../services/offlineApi'
 import { AuthContext } from '../../context/AuthContext'
 import IsletmeFotografPanel from '../../components/IsletmeFotografPanel'
 import useBreakpoint from '../../hooks/useBreakpoint'
+
 
 function ReceteDetayIcerik({ recete }) {
   const adimlar = recete.adimlar || []
@@ -65,6 +68,8 @@ const URUN_EMOJI = {
   pamuk: '🌱', patates: '🥔', soğan: '🧅', sarımsak: '🧄',
   fasulye: '🫘', nohut: '🫘', mercimek: '🫘',
 }
+
+const demo = (s) => (s || '').replace(/\[DEMO\]\s*/gi, '').trim()
 
 function gunFarki(tarihStr) {
   if (!tarihStr) return null
@@ -138,8 +143,11 @@ export default function Danisanlar() {
       navigate('/giris')
       return
     }
-    api.get('/ciftci/danisanlarim/')
-      .then(res => setDanisanlar(res.data))
+    offlineApi.getDanisanlar()
+      .then(({ data, offline }) => {
+        setDanisanlar(data)
+        if (offline) setHata('Çevrimdışı — önbellek gösteriliyor.')
+      })
       .catch(err => {
         console.error(err)
         setHata('Danışanlar yüklenirken hata oluştu.')
@@ -338,90 +346,19 @@ export default function Danisanlar() {
                   <div style={s.kartUst} onClick={() => setAcikCiftci(acik ? null : i)}>
                     <div style={s.kartMeta}>
                       <p style={s.isim}>
-                        [ 👨‍🌾 {g.ciftci_ad} {g.ciftci_soyad} ]
-                        {g.ciftci_telefon && <span style={s.isimDetay}>  📞 {g.ciftci_telefon}</span>}
+                        {demo(g.ciftci_ad)} {demo(g.ciftci_soyad)}
+                        {g.ciftci_telefon && <span style={s.isimDetay}>  {g.ciftci_telefon}</span>}
                       </p>
                       <p style={s.ilce}>
-                        📍 {[g.ciftci_mahalle, g.ciftci_ilce, g.ciftci_il].filter(Boolean).join(' / ')}
-                        {g.ciftci_cks_no && <span>  🆔 ÇKS: {g.ciftci_cks_no}</span>}
+                        {[g.ciftci_mahalle, g.ciftci_ilce, g.ciftci_il].filter(Boolean).join(' / ')}
+                        {g.ciftci_cks_no && <span>  ÇKS: {g.ciftci_cks_no}</span>}
                         <span style={s.isletmeSayisi}>  · {g.isletmeler.length} işletme</span>
                       </p>
                     </div>
                     <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                      <button
-                        style={s.isletmeTalepBtn}
-                        onClick={e => {
-                          e.stopPropagation()
-                          if (isletmeTalepAcik === g.ciftci_id) {
-                            setIsletmeTalepAcik(null)
-                            setIsletmeTalepSecili([])
-                          } else {
-                            setIsletmeTalepAcik(g.ciftci_id)
-                            setIsletmeTalepSecili([])
-                            if (tumCiftciler.length === 0) {
-                              api.get('/ciftci/liste/').then(res => setTumCiftciler(res.data)).catch(() => {})
-                            }
-                          }
-                        }}
-                      >
-                        ➕ İşletme İste
-                      </button>
-                      <span style={s.ok}>{acik ? '▲' : '▼'}</span>
                     </div>
                   </div>
 
-                  {/* İşletme Talep Paneli */}
-                  {isletmeTalepAcik === g.ciftci_id && (() => {
-                    const ciftciVerisi = tumCiftciler.find(c => c.id === g.ciftci_id)
-                    const mevcutIdler = g.isletmeler.map(x => x?.id)
-                    const yeniIsletmeler = (ciftciVerisi?.isletmeler || []).filter(x => !mevcutIdler.includes(x.id))
-                    return (
-                      <div style={s.isletmeTalepPanel} onClick={e => e.stopPropagation()}>
-                        <p style={{ margin:'0 0 8px', fontWeight:'600', fontSize:'0.88rem', color:'#1a7a4a' }}>
-                          Yeni İşletme Seç
-                        </p>
-                        {tumCiftciler.length === 0
-                          ? <p style={{ fontSize:'0.83rem', color:'#aaa' }}>Yükleniyor…</p>
-                          : yeniIsletmeler.length === 0
-                            ? <p style={{ fontSize:'0.83rem', color:'#aaa' }}>Bu çiftçinin tüm işletmelerine erişiminiz var.</p>
-                            : yeniIsletmeler.map(isl => (
-                                <label key={isl.id} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'5px 0', fontSize:'0.88rem', cursor:'pointer' }}>
-                                  <input type="checkbox"
-                                    checked={isletmeTalepSecili.includes(isl.id)}
-                                    onChange={() => setIsletmeTalepSecili(prev =>
-                                      prev.includes(isl.id) ? prev.filter(x => x !== isl.id) : [...prev, isl.id]
-                                    )}
-                                  />
-                                  <span><strong>{isl.ad}</strong>
-                                    <span style={{ color:'#888', fontSize:'0.8rem' }}> · {isl.cesit_ad || isl.urun_ad || '—'} · {isl.alan_dekar ? `${isl.alan_dekar} da` : ''}</span>
-                                  </span>
-                                </label>
-                              ))
-                        }
-                        {yeniIsletmeler.length > 0 && (
-                          <button
-                            style={{ ...s.talepBtn, marginTop:'8px', width:'auto', padding:'6px 16px' }}
-                            disabled={isletmeTalepSecili.length === 0 || gonderiyor}
-                            onClick={async () => {
-                              setGonderiyor(true)
-                              try {
-                                await api.post('/ciftci/talep/', { isletme_idler: isletmeTalepSecili })
-                                setIsletmeTalepAcik(null)
-                                setIsletmeTalepSecili([])
-                                setBasari(`${isletmeTalepSecili.length} işletme için talep gönderildi.`)
-                              } catch {
-                                setHata('Talep gönderilemedi.')
-                              } finally {
-                                setGonderiyor(false)
-                              }
-                            }}
-                          >
-                            {gonderiyor ? 'Gönderiliyor…' : `Talep Gönder (${isletmeTalepSecili.length})`}
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })()}
 
                   {/* İşletme Listesi */}
                   {acik && (
@@ -434,16 +371,12 @@ export default function Danisanlar() {
                           >
                             <div style={s.isletmeKartSol}>
                               <p style={s.isletmeBaslik}>
-                                {urunEmoji(isl.urun_ad, isl.cesit_ad)}{' '}
-                                [ 🏢 {isl.ad} ] 👨‍🌾 {g.ciftci_ad} {g.ciftci_soyad}
-                                {'  -----  '}
-                                🌱 {isl.urun_ad || '—'}{isl.cesit_ad ? ` ${isl.cesit_ad}` : ''}
-                                {'  '}📏 {isl.alan_dekar ? <DekarGoster deger={isl.alan_dekar} /> : '—'}
-                                {gunFarki(isl.ekim_tarihi) !== null && <>{'  '}⏳ {gunFarki(isl.ekim_tarihi)} günlük</>}
-                                {'  '}{isl.enlem && isl.boylam
-                                  ? <a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>📍 {parseFloat(isl.enlem).toFixed(4)}, {parseFloat(isl.boylam).toFixed(4)}</a>
-                                  : <span style={{color:'#ccc',fontSize:'0.78rem'}}>📍 GPS yok</span>
-                                }
+                                {demo(isl.ad)}{'  '}
+                                {demo(g.ciftci_ad)} {demo(g.ciftci_soyad)}
+                                {(isl.urun_ad || isl.cesit_ad) && <>{'  '}{isl.urun_ad || ''}{isl.cesit_ad ? ` ${isl.cesit_ad}` : ''}</>}
+                                {isl.alan_dekar && <>{'  '}<DekarGoster deger={isl.alan_dekar} /></>}
+                                {gunFarki(isl.ekim_tarihi) !== null && <>{'  '}{gunFarki(isl.ekim_tarihi)} günlük</>}
+                                {g.ciftci_mahalle && <>{'  '}<span style={{color:'#888',fontSize:'0.8rem'}}>{g.ciftci_mahalle}</span></>}
                               </p>
                             </div>
                             <div style={{display:'flex',flexDirection:'row',gap:'5px',flexShrink:0,flexWrap:'wrap'}}>
@@ -451,7 +384,7 @@ export default function Danisanlar() {
                                 style={{...s.gecmisBtn, ...(detayIsletme === isl.id ? s.gecmisBtnAcik : {})}}
                                 onClick={e => { e.stopPropagation(); setDetayIsletme(detayIsletme === isl.id ? null : isl.id) }}
                               >
-                                ☰ Detay
+                                  Detay
                               </button>
                             </div>
                           </div>
@@ -463,20 +396,20 @@ export default function Danisanlar() {
                                   style={{...s.gecmisBtn, ...(gpsIsletme === isl.id ? s.gecmisBtnAcik : {})}}
                                   onClick={e => { e.stopPropagation(); setGpsIsletme(gpsIsletme === isl.id ? null : isl.id) }}
                                 >
-                                  📍 Harita
+                                  Harita
                                 </button>
                               )}
                               <button
                                 style={{...s.gecmisBtn, ...(gecmisIsletme === isl.id ? s.gecmisBtnAcik : {})}}
                                 onClick={e => gecmisToggle(e, isl.id)}
                               >
-                                📋 Geçmiş Reçeteler
+                                Geçmiş Reçeteler
                               </button>
                               <button
                                 style={{...s.gecmisBtn, ...(fotografIsletme === isl.id ? s.gecmisBtnAcik : {})}}
                                 onClick={e => { e.stopPropagation(); setFotografIsletme(fotografIsletme === isl.id ? null : isl.id) }}
                               >
-                                📷 Fotoğraflar
+                                Fotoğraflar
                               </button>
                               <button
                                 style={{...s.gecmisBtn, ...(toprakIsletme === isl.id ? s.gecmisBtnAcik : {})}}
@@ -490,7 +423,7 @@ export default function Danisanlar() {
                                   }
                                 }}
                               >
-                                🧪 Toprak Analizi
+                                Toprak Analizi
                               </button>
                             </div>
                           )}
@@ -511,7 +444,7 @@ export default function Danisanlar() {
                           {detayIsletme === isl.id && toprakIsletme === isl.id && (
                             <div style={{ marginTop:'4px', background:'#f8fdf9', border:'1px solid #e0ede6', borderRadius:'6px', padding:'8px 10px' }}>
                               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
-                                <span style={{ fontWeight:'600', fontSize:'0.85rem', color:'#1a7a4a' }}>🧪 Toprak Analizi</span>
+                                <span style={{ fontWeight:'600', fontSize:'0.85rem', color:'#1a7a4a' }}>Toprak Analizi</span>
                                 <button
                                   style={{ padding:'3px 10px', background:'#1a7a4a', color:'#fff', border:'none', borderRadius:'5px', cursor:'pointer', fontSize:'0.78rem' }}
                                   onClick={e => { e.stopPropagation(); setToprakEkle(toprakEkle === isl.id ? null : isl.id); setToprakForm({ tarih: new Date().toISOString().slice(0,10) }) }}
@@ -591,11 +524,13 @@ export default function Danisanlar() {
                           )}
 
                           {detayIsletme === isl.id && fotografIsletme === isl.id && (
-                            <IsletmeFotografPanel
-                              isletmeId={isl.id}
-                              canUpload={true}
-                              onKapat={() => setFotografIsletme(null)}
-                            />
+                            <div onClick={e => e.stopPropagation()}>
+                              <IsletmeFotografPanel
+                                isletmeId={isl.id}
+                                canUpload={true}
+                                onKapat={() => setFotografIsletme(null)}
+                              />
+                            </div>
                           )}
 
                           {detayIsletme === isl.id && gecmisIsletme === isl.id && (
@@ -622,7 +557,13 @@ export default function Danisanlar() {
                                         ? <p style={s.gecmisYukleniyor}>Yükleniyor…</p>
                                         : receteDetay[r.id] === 'hata'
                                           ? <p style={{color:'#e53e3e',fontSize:'0.85rem'}}>Yüklenemedi.</p>
-                                          : <ReceteDetayIcerik recete={receteDetay[r.id]} />
+                                          : <>
+                                              <ReceteDetayIcerik recete={receteDetay[r.id]} />
+                                              <button
+                                                style={{marginTop:'8px',padding:'4px 14px',background:'#1a7a4a',color:'#fff',border:'none',borderRadius:'6px',cursor:'pointer',fontSize:'0.8rem'}}
+                                                onClick={() => recetePdfIndir(receteDetay[r.id])}
+                                              >PDF İndir</button>
+                                            </>
                                       }
                                     </div>
                                   )}

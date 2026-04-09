@@ -191,3 +191,65 @@ class BayiiBolgesiView(generics.ListAPIView):
     def get_queryset(self):
         bayii = self.request.user.bayii_profili
         return Bayii.objects.filter(il=bayii.il)
+
+
+class BayiiListesiView(generics.ListAPIView):
+    """Tüm bayii listesi — çiftçi bu listeden bayii seçer."""
+    serializer_class   = BayiiSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Bayii.objects.all().order_by('il', 'ilce', 'firma_adi')
+
+
+class BayiiMusterileriView(APIView):
+    """Bayii kendi bağlı müşterilerini ve reçete kalemlerini görür."""
+    permission_classes = [IsBayii]
+
+    def get(self, request):
+        from ciftci.models import CiftciBayii
+        from recete.models import UygulamaAdimKalemi
+
+        bayii     = request.user.bayii_profili
+        iliskiler = CiftciBayii.objects.filter(
+            bayii=bayii, durum='onaylandi', aktif=True
+        ).select_related('ciftci')
+
+        sonuc = []
+        for iliski in iliskiler:
+            ciftci = iliski.ciftci
+            kalemler = UygulamaAdimKalemi.objects.filter(
+                adim__recete__isletme__ciftci=ciftci,
+                adim__recete__durum='onaylandi',
+            ).select_related(
+                'ilac', 'gubre', 'adim__recete__isletme'
+            ).order_by('-adim__recete__tarih')[:100]
+
+            kalem_list = []
+            for k in kalemler:
+                r = k.adim.recete
+                kalem_list.append({
+                    'recete_id':    r.id,
+                    'recete_tarih': str(r.tarih),
+                    'isletme_ad':   r.isletme.ad,
+                    'ilac_ad':      k.ilac.ticari_ad   if k.ilac  else None,
+                    'ilac_form':    k.ilac.formulasyon  if k.ilac  else None,
+                    'gubre_ad':     k.gubre.ticari_ad  if k.gubre else None,
+                    'gubre_tur':    k.gubre.tur         if k.gubre else None,
+                    'doz_dekar':    str(k.doz_dekar),
+                    'birim':        k.birim,
+                })
+
+            sonuc.append({
+                'iliski_id':    iliski.id,
+                'ciftci_id':    ciftci.id,
+                'ciftci_ad':    ciftci.ad,
+                'ciftci_soyad': ciftci.soyad,
+                'mahalle':      ciftci.mahalle,
+                'ilce':         ciftci.ilce,
+                'il':           ciftci.il,
+                'telefon':      ciftci.telefon,
+                'kalemler':     kalem_list,
+            })
+
+        return Response(sonuc)
