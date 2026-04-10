@@ -325,118 +325,115 @@ function SulamaBolum({ donemler, setDonemler, katalogIndex, alanDekar }) {
   )
 }
 
-// ─── 🌿 Kültürel Önlemler ───
-function KulturelBolum({ items, setItems }) {
-  const [acik, setAcik] = useState(true)
-  const ekle = () => setItems(p => [...p, { _id: uid(), metin: '' }])
-  const guncelle = (id, metin) => setItems(p => p.map(x => x._id === id ? { ...x, metin } : x))
-  const sil = (id) => setItems(p => p.filter(x => x._id !== id))
+// ─── 📝 Notlar Bloğu — Tanı + Çiftçiye Not + Kültürel + Biyo&Takip ───
+function NotlarBlok({ form, degis, kulturel, setKulturel, biyolojik, setBiyolojik, takip, setTakip }) {
+  const [acik, setAcik] = useState({ tani: true, not: false, kulturel: false, biyo: false })
+  const toggle = (k) => setAcik(p => ({ ...p, [k]: !p[k] }))
 
-  return (
-    <Bolum ikon="🌿" baslik={`Kültürel Önlemler${items.length ? ` (${items.length})` : ''}`}
-      acik={acik} onToggle={() => setAcik(a => !a)}
-      onEkle={ekle} ekleEtiket="Önlem Ekle">
+  const kEkle   = () => setKulturel(p => [...p, { _id: uid(), metin: '' }])
+  const kGuncelle = (id, v) => setKulturel(p => p.map(x => x._id === id ? { ...x, metin: v } : x))
+  const kSil    = (id) => setKulturel(p => p.filter(x => x._id !== id))
 
-      {items.length === 0 && (
-        <p style={s.bosMetin}>Budama, havalandırma, sulama sıklığı vb. — + Önlem Ekle ile başla.</p>
-      )}
+  const bEkle   = () => setBiyolojik(p => [...p, { _id: uid(), ajan: '', doz: '', alan: '', yontem: '' }])
+  const bGuncelle = (id, v) => setBiyolojik(p => p.map(x => x._id === id ? { ...x, ajan: v } : x))
+  const bSil    = (id) => setBiyolojik(p => p.filter(x => x._id !== id))
 
-      <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-        {items.map((x, i) => (
-          <div key={x._id} style={s.satirSatir}>
-            <span style={s.satirNo}>{i+1}.</span>
-            <input style={{ ...s.girdi, flex:1 }}
-              placeholder="Örn: Alt yaprakları temizle, gece havalandırmasını artır"
-              value={x.metin}
-              onChange={e => guncelle(x._id, e.target.value)} />
-            <button style={s.silBtn} onClick={() => sil(x._id)}>✕</button>
-          </div>
-        ))}
-      </div>
-    </Bolum>
+  const tEkle   = () => setTakip(p => [...p, { _id: uid(), tarih: '', aciklama: '' }])
+  const tGuncelle = (id, alan, v) => setTakip(p => p.map(x => x._id === id ? { ...x, [alan]: v } : x))
+  const tSil    = (id) => setTakip(p => p.filter(x => x._id !== id))
+
+  const SubBaslik = ({ id, ikon, baslik, sayac }) => (
+    <button style={{ ...s.notSubBtn, background: acik[id] ? '#f0faf5' : '#fff' }} onClick={() => toggle(id)}>
+      <span style={{ fontSize: '1.1rem' }}>{ikon}</span>
+      <span style={{ flex: 1, textAlign: 'left', fontWeight: 600, fontSize: '0.97rem', color: '#1a7a4a' }}>
+        {baslik}{sayac ? <span style={{ color: '#aaa', fontWeight: 400 }}> ({sayac})</span> : ''}
+      </span>
+      <span style={{ fontSize: '0.8rem', color: '#aaa' }}>{acik[id] ? '▲' : '▼'}</span>
+    </button>
   )
-}
-
-// ─── 🐞 Biyolojik Mücadele ───
-function BiyolojikBolum({ items, setItems }) {
-  const [acik, setAcik] = useState(true)
-  const ekle = () => setItems(p => [...p, { _id: uid(), ajan:'', doz:'', alan:'', yontem:'' }])
-  const guncelle = (id, alan, deger) => setItems(p => p.map(x => x._id === id ? { ...x, [alan]: deger } : x))
-  const sil = (id) => setItems(p => p.filter(x => x._id !== id))
 
   return (
-    <Bolum ikon="🐞" baslik={`Biyolojik Mücadele${items.length ? ` (${items.length})` : ''}`}
-      acik={acik} onToggle={() => setAcik(a => !a)}
-      onEkle={ekle} ekleEtiket="Ajan Ekle">
-
-      {items.length === 0 && (
-        <p style={s.bosMetin}>Faydalı böcek, tuzak, feromon vb. — + Ajan Ekle ile başla.</p>
+    <div style={s.notlarBlok}>
+      {/* ── Tanı ── */}
+      <SubBaslik id="tani" ikon="🔍" baslik="Tanı / Problem" sayac={form.tani ? 1 : 0} />
+      {acik.tani && (
+        <div style={s.notIcerik}>
+          <input name="tani" value={form.tani} onChange={degis} style={s.notGirdi}
+            placeholder="Örn: Külleme hastalığı, kırmızı örümcek, demir eksikliği…" />
+        </div>
       )}
 
-      <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-        {items.map((x, i) => (
-          <div key={x._id} style={s.biyoSatir}>
-            <span style={s.satirNo}>{i+1}.</span>
-            <div style={s.biyoGruplar}>
-              <div style={s.biyoAlan}>
-                <label style={s.miniEtiket}>Ajan Adı</label>
-                <input style={s.girdi} placeholder="Phytoseiulus persimilis"
-                  value={x.ajan} onChange={e => guncelle(x._id, 'ajan', e.target.value)} />
-              </div>
-              <div style={s.biyoAlan}>
-                <label style={s.miniEtiket}>Doz</label>
-                <input style={s.girdi} placeholder="50 adet/100m²"
-                  value={x.doz} onChange={e => guncelle(x._id, 'doz', e.target.value)} />
-              </div>
-              <div style={s.biyoAlan}>
-                <label style={s.miniEtiket}>Uygulama Alanı</label>
-                <input style={s.girdi} placeholder="Tüm sera"
-                  value={x.alan} onChange={e => guncelle(x._id, 'alan', e.target.value)} />
-              </div>
-              <div style={s.biyoAlan}>
-                <label style={s.miniEtiket}>Yöntem</label>
-                <input style={s.girdi} placeholder="Salım, asma vb."
-                  value={x.yontem} onChange={e => guncelle(x._id, 'yontem', e.target.value)} />
-              </div>
-            </div>
-            <button style={s.silBtn} onClick={() => sil(x._id)}>✕</button>
-          </div>
-        ))}
-      </div>
-    </Bolum>
-  )
-}
-
-// ─── 📋 Takip Noktaları ───
-function TakipBolum({ items, setItems }) {
-  const [acik, setAcik] = useState(true)
-  const ekle = () => setItems(p => [...p, { _id: uid(), tarih:'', aciklama:'' }])
-  const guncelle = (id, alan, deger) => setItems(p => p.map(x => x._id === id ? { ...x, [alan]: deger } : x))
-  const sil = (id) => setItems(p => p.filter(x => x._id !== id))
-
-  return (
-    <Bolum ikon="📋" baslik={`Takip Noktaları${items.length ? ` (${items.length})` : ''}`}
-      acik={acik} onToggle={() => setAcik(a => !a)}
-      onEkle={ekle} ekleEtiket="Takip Ekle">
-
-      {items.length === 0 && (
-        <p style={s.bosMetin}>Kontrol tarihleri ve yapılacaklar — + Takip Ekle ile başla.</p>
+      {/* ── Çiftçiye Not ── */}
+      <SubBaslik id="not" ikon="👨‍🌾" baslik="Çiftçiye Not" sayac={form.ciftciye_not ? 1 : 0} />
+      {acik.not && (
+        <div style={s.notIcerik}>
+          <textarea name="ciftciye_not" value={form.ciftciye_not} onChange={degis}
+            style={{ ...s.notGirdi, height: '80px', resize: 'vertical' }}
+            placeholder="Uygulamada dikkat edilecek hususlar…" />
+        </div>
       )}
 
-      <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-        {items.map((x, i) => (
-          <div key={x._id} style={s.satirSatir}>
-            <span style={s.satirNo}>{i+1}.</span>
-            <input type="date" style={{ ...s.girdi, width:'140px', flexShrink:0 }}
-              value={x.tarih} onChange={e => guncelle(x._id, 'tarih', e.target.value)} />
-            <input style={{ ...s.girdi, flex:1 }}
-              placeholder="Örn: 7. gün — yeni leke oluşumu, etkinlik değerlendirmesi"
-              value={x.aciklama} onChange={e => guncelle(x._id, 'aciklama', e.target.value)} />
-            <button style={s.silBtn} onClick={() => sil(x._id)}>✕</button>
+      {/* ── Kültürel Önlemler ── */}
+      <SubBaslik id="kulturel" ikon="🌿" baslik="Kültürel Önlemler" sayac={kulturel.length} />
+      {acik.kulturel && (
+        <div style={s.notIcerik}>
+          {kulturel.length === 0 && <p style={s.bosMetin}>Budama, havalandırma, sulama sıklığı vb.</p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {kulturel.map((x, i) => (
+              <div key={x._id} style={s.notSatir}>
+                <span style={s.notNo}>{i + 1}.</span>
+                <input style={{ ...s.notGirdi, flex: 1 }}
+                  placeholder="Örn: Alt yaprakları temizle, gece havalandırmasını artır"
+                  value={x.metin} onChange={e => kGuncelle(x._id, e.target.value)} />
+                <button style={s.notSilBtn} onClick={() => kSil(x._id)}>✕</button>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </Bolum>
+          <button style={s.notEkleBtn} onClick={kEkle}>+ Önlem Ekle</button>
+        </div>
+      )}
+
+      {/* ── Biyolojik Mücadele & Takip Notları ── */}
+      <SubBaslik id="biyo" ikon="🐞" baslik="Biyolojik Mücadele & Takip Notları"
+        sayac={biyolojik.length + takip.length} />
+      {acik.biyo && (
+        <div style={s.notIcerik}>
+          <p style={{ fontSize: '0.8rem', color: '#888', margin: '0 0 8px', fontWeight: 600 }}>🐞 Biyolojik Mücadele</p>
+          {biyolojik.length === 0 && <p style={s.bosMetin}>Faydalı böcek, tuzak, feromon vb.</p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {biyolojik.map((x, i) => (
+              <div key={x._id} style={s.notSatir}>
+                <span style={s.notNo}>{i + 1}.</span>
+                <input style={{ ...s.notGirdi, flex: 1 }}
+                  placeholder="Ajan adı, doz, uygulama yöntemi (örn: Phytoseiulus — 50 ad/100m²)"
+                  value={x.ajan} onChange={e => bGuncelle(x._id, e.target.value)} />
+                <button style={s.notSilBtn} onClick={() => bSil(x._id)}>✕</button>
+              </div>
+            ))}
+          </div>
+          <button style={s.notEkleBtn} onClick={bEkle}>+ Biyolojik Ekle</button>
+
+          <div style={{ borderTop: '1px solid #eee', margin: '14px 0 10px' }} />
+
+          <p style={{ fontSize: '0.8rem', color: '#888', margin: '0 0 8px', fontWeight: 600 }}>📋 Takip Noktaları</p>
+          {takip.length === 0 && <p style={s.bosMetin}>Kontrol tarihleri ve yapılacaklar.</p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {takip.map((x, i) => (
+              <div key={x._id} style={s.notSatir}>
+                <span style={s.notNo}>{i + 1}.</span>
+                <input type="date" style={{ ...s.notGirdi, width: '148px', flexShrink: 0 }}
+                  value={x.tarih} onChange={e => tGuncelle(x._id, 'tarih', e.target.value)} />
+                <input style={{ ...s.notGirdi, flex: 1 }}
+                  placeholder="7. gün — yeni leke oluşumu, etkinlik değerlendirmesi"
+                  value={x.aciklama} onChange={e => tGuncelle(x._id, 'aciklama', e.target.value)} />
+                <button style={s.notSilBtn} onClick={() => tSil(x._id)}>✕</button>
+              </div>
+            ))}
+          </div>
+          <button style={s.notEkleBtn} onClick={tEkle}>+ Takip Ekle</button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -766,18 +763,6 @@ ${analizler.length === 0
             </div>
           </div>
 
-          <div style={{...s.alan, gridColumn:'span 3'}}>
-            <label style={s.etiket}>Tanı / Problem</label>
-            <input name="tani" value={form.tani} onChange={degis} style={s.girdi}
-              placeholder="Örn: Külleme hastalığı, kırmızı örümcek, demir eksikliği…" />
-          </div>
-
-          <div style={{...s.alan, gridColumn:'span 3'}}>
-            <label style={s.etiket}>Çiftçiye Not</label>
-            <textarea name="ciftciye_not" value={form.ciftciye_not} onChange={degis}
-              style={{...s.girdi, height:'56px', resize:'vertical'}}
-              placeholder="Uygulamada dikkat edilecek hususlar…" />
-          </div>
         </div>
       </div>
 
@@ -786,24 +771,26 @@ ${analizler.length === 0
         donemler={donemler} setDonemler={setDonemler}
         katalogIndex={katalogIndex} alanDekar={alanDekar} />
 
-      <KulturelBolum  items={kulturel}  setItems={setKulturel} />
-      <BiyolojikBolum items={biyolojik} setItems={setBiyolojik} />
-      <TakipBolum     items={takip}     setItems={setTakip} />
+      <NotlarBlok
+        form={form} degis={degis}
+        kulturel={kulturel} setKulturel={setKulturel}
+        biyolojik={biyolojik} setBiyolojik={setBiyolojik}
+        takip={takip} setTakip={setTakip} />
 
 
       {/* Alt bar */}
       {hata && <p style={s.hata}>{hata}</p>}
       <div style={s.altBar}>
-        <button style={s.iptalBtn} onClick={() => navigate('/muhendis/receteler')}>Vazgeç</button>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <button style={s.iptalBuyukBtn} onClick={() => navigate('/muhendis/receteler')}>Vazgeç</button>
+        <div style={{ display: 'flex', gap: '10px' }}>
           <button
-            style={s.ziyaretBtn}
+            style={s.ziyaretBuyukBtn}
             onClick={() => navigate(`/muhendis/takvim${form.isletme ? `?isletme=${form.isletme}` : ''}`)}
             disabled={kaydediyor}
           >
             📅 Ziyaret Ekle
           </button>
-          <button style={s.kaydetBtn} onClick={kaydet} disabled={kaydediyor}>
+          <button style={s.kaydetBuyukBtn} onClick={kaydet} disabled={kaydediyor}>
             {kaydediyor ? 'Kaydediliyor…' : '💾 Reçeteyi Kaydet'}
           </button>
         </div>
@@ -878,5 +865,20 @@ const s = {
   biyoAlan:   { display:'flex', flexDirection:'column', gap:'2px' },
 
   hata:  { color:'#e53e3e', fontSize:'0.85rem', margin:'4px 0 8px' },
-  altBar:{ display:'flex', justifyContent:'flex-end', gap:'8px', paddingTop:'12px', borderTop:'1px solid #f0f0f0', marginTop:'8px' },
+  altBar:{ display:'flex', justifyContent:'flex-end', gap:'8px', paddingTop:'14px', borderTop:'1px solid #f0f0f0', marginTop:'8px' },
+
+  // ── Notlar bloğu ──
+  notlarBlok:  { background:'#fff', border:'1px solid #e8e8e8', borderRadius:'12px', marginBottom:'10px', overflow:'hidden' },
+  notSubBtn:   { width:'100%', display:'flex', alignItems:'center', gap:'10px', padding:'15px 16px', border:'none', borderBottom:'1px solid #f0f0f0', cursor:'pointer', fontFamily:'inherit', transition:'background .15s' },
+  notIcerik:   { padding:'12px 16px 14px', borderBottom:'1px solid #f2f2f2' },
+  notGirdi:    { padding:'13px 14px', border:'1px solid #ddd', borderRadius:'8px', fontSize:'1rem', outline:'none', width:'100%', boxSizing:'border-box', fontFamily:'inherit', minHeight:'48px' },
+  notSatir:    { display:'flex', alignItems:'center', gap:'8px' },
+  notNo:       { color:'#bbb', fontSize:'0.85rem', minWidth:'20px', textAlign:'right', flexShrink:0 },
+  notSilBtn:   { padding:'10px 13px', background:'#fff0f0', color:'#e53e3e', border:'1px solid #fcc', borderRadius:'7px', cursor:'pointer', fontSize:'0.9rem', flexShrink:0, minHeight:'46px', lineHeight:1 },
+  notEkleBtn:  { width:'100%', padding:'13px', background:'#f0faf5', color:'#1a7a4a', border:'1px dashed #b8dfc9', borderRadius:'8px', cursor:'pointer', fontSize:'1rem', fontWeight:'600', marginTop:'10px' },
+
+  // ── Büyük alt tuşlar (muddy hand friendly) ──
+  iptalBuyukBtn:   { padding:'14px 22px', background:'#f0f0f0', color:'#555', border:'none', borderRadius:'10px', cursor:'pointer', fontSize:'1rem', fontWeight:'500', minHeight:'52px' },
+  ziyaretBuyukBtn: { padding:'14px 22px', background:'#f0f0f0', color:'#1a7a4a', border:'1px solid #c8e6d4', borderRadius:'10px', cursor:'pointer', fontSize:'1rem', fontWeight:'500', minHeight:'52px' },
+  kaydetBuyukBtn:  { padding:'14px 32px', background:'#1a7a4a', color:'#fff', border:'none', borderRadius:'10px', cursor:'pointer', fontSize:'1rem', fontWeight:'700', minHeight:'52px' },
 }
