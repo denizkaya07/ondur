@@ -76,6 +76,27 @@ class MuhendisIsletmeTalepView(APIView):
         return Response({'olusturulan': olusturulan, 'zaten_var': zaten_var}, status=status.HTTP_201_CREATED)
 
 
+class CiftciMuhendiseTalepView(APIView):
+    """Çiftçi, belirli bir mühendise danışmanlık talebi gönderir."""
+    permission_classes = [IsCiftci]
+
+    def post(self, request):
+        muhendis_id = request.data.get('muhendis_id')
+        isletme_id  = request.data.get('isletme_id')
+        if not muhendis_id or not isletme_id:
+            return Response({'hata': 'muhendis_id ve isletme_id gerekli.'}, status=status.HTTP_400_BAD_REQUEST)
+        isletme = get_object_or_404(Isletme, pk=isletme_id, ciftci__kullanici=request.user)
+        from accounts.models import Kullanici
+        muhendis = get_object_or_404(Kullanici, pk=muhendis_id, rol='muhendis')
+        iliski, created = MuhendisIsletme.objects.get_or_create(
+            muhendis=muhendis, isletme=isletme,
+            defaults={'durum': MuhendisIsletme.Durum.BEKLIYOR, 'baslatan': 'ciftci'}
+        )
+        if not created:
+            return Response({'hata': 'Bu mühendis ile zaten bir ilişki var.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(MuhendisIsletmeSerializer(iliski).data, status=status.HTTP_201_CREATED)
+
+
 class MuhendisDanisanlarView(generics.ListAPIView):
     permission_classes = [IsMuhendis]
     serializer_class   = MuhendisIsletmeSerializer
@@ -85,6 +106,42 @@ class MuhendisDanisanlarView(generics.ListAPIView):
             muhendis=self.request.user,
             durum=MuhendisIsletme.Durum.ONAYLANDI
         ).select_related('isletme__ciftci', 'isletme__urun', 'isletme__cesit')
+
+
+class MuhendisBekleyenTaleplerView(generics.ListAPIView):
+    """Çiftçi tarafından başlatılan ve mühendis onayı bekleyen talepler."""
+    permission_classes = [IsMuhendis]
+    serializer_class   = MuhendisIsletmeSerializer
+
+    def get_queryset(self):
+        return MuhendisIsletme.objects.filter(
+            muhendis=self.request.user,
+            durum=MuhendisIsletme.Durum.BEKLIYOR,
+            baslatan='ciftci',
+        ).select_related('isletme__ciftci', 'isletme__urun', 'isletme__cesit')
+
+
+class MuhendisTalepYanitlaView(APIView):
+    """Mühendis, çiftçinin danışmanlık talebini kabul veya reddeder."""
+    permission_classes = [IsMuhendis]
+
+    def post(self, request, pk):
+        talep = get_object_or_404(
+            MuhendisIsletme, pk=pk,
+            muhendis=request.user,
+            durum=MuhendisIsletme.Durum.BEKLIYOR,
+            baslatan='ciftci',
+        )
+        karar = request.data.get('karar')
+        if karar == 'onayla':
+            talep.durum = MuhendisIsletme.Durum.ONAYLANDI
+        elif karar == 'reddet':
+            talep.durum = MuhendisIsletme.Durum.REDDEDILDI
+        else:
+            return Response({'hata': '"onayla" veya "reddet" olmalı.'}, status=status.HTTP_400_BAD_REQUEST)
+        talep.yanit_tarihi = timezone.now()
+        talep.save()
+        return Response(MuhendisIsletmeSerializer(talep).data)
 
 
 # ── ÇİFTÇİ ──

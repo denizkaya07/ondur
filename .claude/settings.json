@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py check)",
+      "Bash(python manage.py shell)",
+      "Bash(python -c \"import django, os; os.environ['DJANGO_SETTINGS_MODULE']='ondur.settings'; django.setup\\(\\); exec\\(open\\('katalog_veri.py'\\).read\\(\\)\\)\")",
+      "Bash(python -c ':*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://127.0.0.1:8000/media/isletme_fotograflar/2026/04/Domates-Kahverengi-Meyve-Burusukluk-Virusu-hastaliginin-Doma_q98oEDT.jpg\")",
+      "Bash(python manage.py runserver --noreload)",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/api/auth/token/ -H \"Content-Type: application/json\" -d '{\"telefon\":\"05100000001\",\"sifre\":\"1234\"}')",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/api/auth/token/ -H \"Content-Type: application/json\" -d \"{\\\\\"telefon\\\\\":\\\\\"05100000001\\\\\",\\\\\"sifre\\\\\":\\\\\"1234\\\\\"}\")",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/api/auth/giris/ -H \"Content-Type: application/json\" -d \"{\\\\\"telefon\\\\\":\\\\\"05100000001\\\\\",\\\\\"sifre\\\\\":\\\\\"1234\\\\\"}\")",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/api/auth/giris/ -H \"Content-Type: application/json\" -d \"{\\\\\"telefon\\\\\":\\\\\"05100000001\\\\\",\\\\\"password\\\\\":\\\\\"1234\\\\\"}\")",
+      "Bash(node --input-type=module)",
+      "Bash(npx vite:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('plugin-react' in str\\(list\\(d.get\\('packages',{}\\).keys\\(\\)\\)[:20]\\)\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d['devDependencies'], indent=2\\)\\)\")",
+      "Bash(npm list:*)",
+      "Bash(dir \"c:\\\\ondur\\\\frontend\\\\node_modules\\\\@vitejs\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npm cache:*)",
+      "Bash(npm view:*)",
+      "Read(//c//**)",
+      "Read(//c/Users/AA/AppData/Local/npm-cache/_cacache/content-v2/sha512/**)",
+      "Read(//c/Users/AA/AppData/Local/npm-cache/_logs/**)",
+      "Bash(npm pack:*)",
+      "Read(//tmp/**)",
+      "Bash(npm config:*)",
+      "Read(//c/Users/AA/**)",
+      "Read(//c/Program Files/nodejs/node_modules/npm/**)",
+      "Bash(xargs grep:*)",
+      "Bash(python -c \"import django, os; os.environ['DJANGO_SETTINGS_MODULE']='ondur.settings'; django.setup\\(\\); from katalog import views; from ciftci import serializers; print\\('OK'\\)\")",
+      "Bash(python -c \"import django,os; os.environ['DJANGO_SETTINGS_MODULE']='ondur.settings'; django.setup\\(\\); from accounts.serializers import KullaniciSerializer; print\\('OK'\\)\")"
+    ]
+  }
+}

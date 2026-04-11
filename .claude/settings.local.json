@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py shell -c \"from accounts.models import Kullanici; print\\(list\\(Kullanici.objects.values\\('telefon','rol','is_active'\\)\\)\\)\")",
+      "Bash(python manage.py shell -c \"from ciftci.models import IsletmeFotograf; print\\('OK', IsletmeFotograf._meta.db_table\\)\")",
+      "Bash(python manage.py shell -c ':*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

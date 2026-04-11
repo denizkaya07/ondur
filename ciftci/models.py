@@ -148,8 +148,9 @@ class Isletme(models.Model):
                       null=True,
                       blank=True
                   )
-    alan_dekar  = models.DecimalField(max_digits=8, decimal_places=2)
-    ekim_tarihi = models.DateField(null=True, blank=True)
+    alan_dekar    = models.DecimalField(max_digits=8, decimal_places=2)
+    ortualti_no   = models.CharField(max_length=50, blank=True, verbose_name='Örtüaltı Tescil No')
+    ekim_tarihi   = models.DateField(null=True, blank=True)
     enlem       = models.DecimalField(
                       max_digits=9,
                       decimal_places=6,
@@ -251,6 +252,11 @@ class MuhendisIsletme(models.Model):
                        max_length=20,
                        choices=Durum.choices,
                        default=Durum.BEKLIYOR
+                   )
+    baslatan     = models.CharField(
+                       max_length=20,
+                       choices=[('muhendis','Mühendis'),('ciftci','Çiftçi')],
+                       default='muhendis'
                    )
     talep_tarihi = models.DateTimeField(auto_now_add=True)
     yanit_tarihi = models.DateTimeField(null=True, blank=True)

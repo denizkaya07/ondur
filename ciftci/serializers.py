@@ -23,7 +23,7 @@ class IsletmeSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'ad', 'tur', 'sera_tip',
             'urun', 'urun_ad', 'cesit', 'cesit_ad',
-            'alan_dekar', 'ekim_tarihi',
+            'alan_dekar', 'ortualti_no', 'ekim_tarihi',
             'enlem', 'boylam', 'aktif', 'olusturma'
         ]
 
@@ -90,7 +90,7 @@ class MuhendisIsletmeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = MuhendisIsletme
-        fields = ['id', 'isletme', 'muhendis_ad', 'ciftci_id', 'ciftci_ad', 'ciftci_soyad', 'ciftci_mahalle', 'ciftci_ilce', 'ciftci_il', 'ciftci_cks_no', 'ciftci_telefon', 'durum', 'talep_tarihi', 'yanit_tarihi']
+        fields = ['id', 'isletme', 'muhendis_ad', 'ciftci_id', 'ciftci_ad', 'ciftci_soyad', 'ciftci_mahalle', 'ciftci_ilce', 'ciftci_il', 'ciftci_cks_no', 'ciftci_telefon', 'durum', 'baslatan', 'talep_tarihi', 'yanit_tarihi']
 
 class IsletmeFotografSerializer(serializers.ModelSerializer):
     yukleyen_ad  = serializers.CharField(source='yukleyen.get_full_name', read_only=True)

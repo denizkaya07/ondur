@@ -252,7 +252,10 @@ export default function Danisanlar() {
     <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <div style={s.ustBar}>
         <h2 style={s.baslik}>Danışanlarım</h2>
-        <button style={s.ekleBtn} onClick={aramaAc}>+ Danışan Ekle</button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button style={s.navBtn} onClick={() => navigate('/muhendis/receteler')}>Reçetelerim</button>
+          <button style={s.navBtn} onClick={() => navigate('/muhendis/takvim')}>Takvim</button>
+        </div>
       </div>
 
       {/* ── Danışan Ekle Paneli ── */}
@@ -376,6 +379,7 @@ export default function Danisanlar() {
                                 {(isl.urun_ad || isl.cesit_ad) && <>{'  '}{isl.urun_ad || ''}{isl.cesit_ad ? ` ${isl.cesit_ad}` : ''}</>}
                                 {isl.alan_dekar && <>{'  '}<DekarGoster deger={isl.alan_dekar} /></>}
                                 {gunFarki(isl.ekim_tarihi) !== null && <>{'  '}{gunFarki(isl.ekim_tarihi)} günlük</>}
+                                {isl.ortualti_no && <><br /><span style={{color:'#888',fontSize:'0.78rem'}}>🏷️ {isl.ortualti_no}</span></>}
                                 {g.ciftci_mahalle && <>{'  '}<span style={{color:'#888',fontSize:'0.8rem'}}>{g.ciftci_mahalle}</span></>}
                               </p>
                             </div>
@@ -590,6 +594,7 @@ const s = {
   ustBar:    { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' },
   baslik:    { fontSize: '1.5rem', fontWeight: '500', margin: 0, color: '#1a7a4a' },
   ekleBtn:   { padding: '8px 16px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem' },
+  navBtn:    { padding: '8px 16px', background: '#f0faf5', color: '#1a7a4a', border: '1px solid #c8e6d4', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '500' },
   yuklenme:  { padding: '2rem', textAlign: 'center', color: '#888' },
   bos:       { padding: '3rem', textAlign: 'center', color: '#aaa', background: '#f9f9f9', borderRadius: '10px' },
   filtre: {

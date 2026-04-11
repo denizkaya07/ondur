@@ -11,12 +11,15 @@ urlpatterns = [
     path('ara/', views.CiftciAraView.as_view(), name='ciftci-ara'),
     path('talep/', views.MuhendisIsletmeTalepView.as_view(), name='isletme-talep'),
     path('danisanlarim/', views.MuhendisDanisanlarView.as_view(), name='danisanlar'),
+    path('gelen-talepler/', views.MuhendisBekleyenTaleplerView.as_view(), name='muhendis-gelen-talepler'),
+    path('gelen-talepler/<int:pk>/yanit/', views.MuhendisTalepYanitlaView.as_view(), name='muhendis-talep-yanit'),
 
     # Çiftçi endpoint'leri
     path('isletmelerim/', views.CiftciIsletmelerView.as_view(), name='ciftci-isletmeler'),
     path('isletme/ekle/', views.CiftciIsletmeEkleView.as_view(), name='isletme-ekle'),
     path('isletme/<int:pk>/guncelle/', views.CiftciIsletmeGuncelleView.as_view(), name='isletme-guncelle'),
     path('talepler/', views.BekleyenTaleplerView.as_view(), name='bekleyen-talepler'),
+    path('muhendise-talep/', views.CiftciMuhendiseTalepView.as_view(), name='ciftci-muhendis-talep'),
     path('talepler/<int:pk>/yanit/', views.TalepYanitlaView.as_view(), name='talep-yanit'),
     path('bayiilerim/',         views.CiftciBayiiListView.as_view(),   name='ciftci-bayiilerim'),
     path('bayii/talep/',        views.CiftciBayiiTalepView.as_view(),  name='ciftci-bayii-talep'),

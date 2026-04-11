@@ -2,6 +2,7 @@ from rest_framework import generics, permissions, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Count, Sum, F, ExpressionWrapper, DecimalField
+from rest_framework import permissions as drf_permissions
 from ondur.permissions import IsUretici, IsBayii
 from .models import Ilac, Gubre, EtkenMadde, BayiiUrun, Bayii
 from .serializers import (
@@ -253,3 +254,46 @@ class BayiiMusterileriView(APIView):
             })
 
         return Response(sonuc)
+
+
+class IsletmeBayiiUrunleriView(APIView):
+    """
+    Mühendis için: verilen işletmenin bağlı bayiisinin ürün listesi.
+    ?isletme=<id>&tip=stok   → çiftçinin kendi bayiisinin ürünleri
+    ?isletme=<id>&tip=bolge  → aynı ildeki tüm bayiilerin ürünleri
+    """
+    permission_classes = [drf_permissions.IsAuthenticated]
+
+    def get(self, request):
+        from ciftci.models import CiftciBayii, Isletme
+        isletme_id = request.query_params.get('isletme')
+        tip        = request.query_params.get('tip', 'stok')
+
+        if not isletme_id:
+            return Response({'hata': 'isletme parametresi gerekli.'}, status=400)
+
+        try:
+            isletme = Isletme.objects.select_related('ciftci').get(pk=isletme_id)
+        except Isletme.DoesNotExist:
+            return Response({'hata': 'İşletme bulunamadı.'}, status=404)
+
+        ciftci = isletme.ciftci
+
+        if tip == 'stok':
+            bayii_idler = CiftciBayii.objects.filter(
+                ciftci=ciftci, durum='onaylandi'
+            ).values_list('bayii_id', flat=True)
+        else:
+            bayii_idler = Bayii.objects.filter(il=ciftci.il).values_list('id', flat=True)
+
+        urunler = BayiiUrun.objects.filter(
+            bayii_id__in=bayii_idler, aktif=True
+        ).select_related('ilac', 'gubre')
+
+        ilac_adlar  = set()
+        gubre_adlar = set()
+        for u in urunler:
+            if u.ilac:  ilac_adlar.add(u.ilac.ticari_ad)
+            if u.gubre: gubre_adlar.add(u.gubre.ticari_ad)
+
+        return Response({'ilaclar': list(ilac_adlar), 'gubreler': list(gubre_adlar)})

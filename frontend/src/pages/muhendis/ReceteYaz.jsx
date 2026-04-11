@@ -22,7 +22,7 @@ function urunEmoji(urunAd, cesitAd) {
 import api from '../../services/api'
 
 // ─── ID üretici ───
-let _id = 0
+let _id = Date.now()
 const uid = () => ++_id
 
 // ─── Toplam miktar hesabı ───
@@ -342,20 +342,32 @@ function NotlarBlok({ form, degis, kulturel, setKulturel, biyolojik, setBiyoloji
   const tGuncelle = (id, alan, v) => setTakip(p => p.map(x => x._id === id ? { ...x, [alan]: v } : x))
   const tSil    = (id) => setTakip(p => p.filter(x => x._id !== id))
 
-  const SubBaslik = ({ id, ikon, baslik, sayac }) => (
-    <button style={{ ...s.notSubBtn, background: acik[id] ? '#f0faf5' : '#fff' }} onClick={() => toggle(id)}>
-      <span style={{ fontSize: '1.1rem' }}>{ikon}</span>
-      <span style={{ flex: 1, textAlign: 'left', fontWeight: 600, fontSize: '0.97rem', color: '#1a7a4a' }}>
-        {baslik}{sayac ? <span style={{ color: '#aaa', fontWeight: 400 }}> ({sayac})</span> : ''}
-      </span>
-      <span style={{ fontSize: '0.8rem', color: '#aaa' }}>{acik[id] ? '▲' : '▼'}</span>
-    </button>
-  )
+  const sekmeler = [
+    { id: 'tani',    ikon: '🔍', baslik: 'Tanı',         sayac: form.tani ? 1 : 0 },
+    { id: 'not',     ikon: '👨‍🌾', baslik: 'Çiftçiye Not', sayac: form.ciftciye_not ? 1 : 0 },
+    { id: 'kulturel',ikon: '🌿', baslik: 'Kültürel',      sayac: kulturel.length },
+    { id: 'biyo',    ikon: '🐞', baslik: 'Biyo & Takip',  sayac: biyolojik.length + takip.length },
+  ]
 
   return (
     <div style={s.notlarBlok}>
+      {/* ── Sekme çubuğu ── */}
+      <div style={s.notTabBar}>
+        {sekmeler.map(({ id, ikon, baslik, sayac }) => (
+          <button key={id}
+            style={{ ...s.notTab, ...(acik[id] ? s.notTabAktif : {}) }}
+            onClick={() => setAcik(p => {
+              const yeni = { tani: false, not: false, kulturel: false, biyo: false }
+              return { ...yeni, [id]: !p[id] }
+            })}>
+            <span>{ikon}</span>
+            <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{baslik}</span>
+            {sayac > 0 && <span style={s.notBadge}>{sayac}</span>}
+          </button>
+        ))}
+      </div>
+
       {/* ── Tanı ── */}
-      <SubBaslik id="tani" ikon="🔍" baslik="Tanı / Problem" sayac={form.tani ? 1 : 0} />
       {acik.tani && (
         <div style={s.notIcerik}>
           <input name="tani" value={form.tani} onChange={degis} style={s.notGirdi}
@@ -364,7 +376,6 @@ function NotlarBlok({ form, degis, kulturel, setKulturel, biyolojik, setBiyoloji
       )}
 
       {/* ── Çiftçiye Not ── */}
-      <SubBaslik id="not" ikon="👨‍🌾" baslik="Çiftçiye Not" sayac={form.ciftciye_not ? 1 : 0} />
       {acik.not && (
         <div style={s.notIcerik}>
           <textarea name="ciftciye_not" value={form.ciftciye_not} onChange={degis}
@@ -374,7 +385,6 @@ function NotlarBlok({ form, degis, kulturel, setKulturel, biyolojik, setBiyoloji
       )}
 
       {/* ── Kültürel Önlemler ── */}
-      <SubBaslik id="kulturel" ikon="🌿" baslik="Kültürel Önlemler" sayac={kulturel.length} />
       {acik.kulturel && (
         <div style={s.notIcerik}>
           {kulturel.length === 0 && <p style={s.bosMetin}>Budama, havalandırma, sulama sıklığı vb.</p>}
@@ -393,9 +403,6 @@ function NotlarBlok({ form, degis, kulturel, setKulturel, biyolojik, setBiyoloji
         </div>
       )}
 
-      {/* ── Biyolojik Mücadele & Takip Notları ── */}
-      <SubBaslik id="biyo" ikon="🐞" baslik="Biyolojik Mücadele & Takip Notları"
-        sayac={biyolojik.length + takip.length} />
       {acik.biyo && (
         <div style={s.notIcerik}>
           <p style={{ fontSize: '0.8rem', color: '#888', margin: '0 0 8px', fontWeight: 600 }}>🐞 Biyolojik Mücadele</p>
@@ -446,9 +453,14 @@ export default function ReceteYaz() {
   const [katalogIndex, setKatalogIndex] = useState({})
   const [kaydediyor,  setKaydediyor]  = useState(false)
   const [hata,        setHata]        = useState('')
+  const [paylasModal, setPaylasModal] = useState(null) // { rid, metin }
   const [hataliAlanlar, setHataliAlanlar] = useState({})
   const [toprakAcik,  setToprakAcik]  = useState(false)
   const [toprakVeriler, setToprakVeriler] = useState([])
+  const [bayiiStok,   setBayiiStok]   = useState(false)
+  const [bolgeStok,   setBolgeStok]   = useState(false)
+  const [bayiiUrunler, setBayiiUrunler] = useState({ ilaclar: [], gubreler: [] })
+  const [bolgeUrunler, setBolgeUrunler] = useState({ ilaclar: [], gubreler: [] })
   const autoSaveRef = useRef(null)
 
   const isletmeParam = searchParams.get('isletme') || ''
@@ -469,7 +481,7 @@ export default function ReceteYaz() {
   })
 
   // Bölümler — localStorage'dan geri yükle
-  const [donemler,   setDonemler]  = useState(() => { try { return JSON.parse(localStorage.getItem(LS_KEY+'_donem') || 'null') || [] } catch { return [] } })
+  const [donemler,   setDonemler]  = useState(() => { try { const saved = JSON.parse(localStorage.getItem(LS_KEY+'_donem') || 'null') || []; return saved.map(d => ({ ...d, _id: uid(), satirlar: (d.satirlar||[]).map(s => ({ ...s, _id: uid() })) })) } catch { return [] } })
   const [kulturel,   setKulturel]  = useState(() => { try { return JSON.parse(localStorage.getItem(LS_KEY+'_kultur') || '[]') } catch { return [] } })
   const [biyolojik,  setBiyolojik] = useState(() => { try { return JSON.parse(localStorage.getItem(LS_KEY+'_biyo') || '[]') } catch { return [] } })
   const [takip,      setTakip]     = useState(() => { try { return JSON.parse(localStorage.getItem(LS_KEY+'_takip') || '[]') } catch { return [] } })
@@ -477,6 +489,18 @@ export default function ReceteYaz() {
   // Seçili işletmenin alan_dekar değeri
   const seciliIsletme = isletmeler.find(d => String(d.isletme.id) === String(form.isletme))
   const alanDekar = parseFloat(seciliIsletme?.isletme?.alan_dekar) || 0
+
+  // Bayii filtreli katalog index — seçili opsiyonlara göre önceliklendirme
+  const filtreliKatalogIndex = (() => {
+    if (!bayiiStok && !bolgeStok) return katalogIndex
+    const oncelikli = new Set([
+      ...(bayiiStok ? [...bayiiUrunler.ilaclar, ...bayiiUrunler.gubreler] : []),
+      ...(bolgeStok ? [...bolgeUrunler.ilaclar, ...bolgeUrunler.gubreler] : []),
+    ])
+    if (oncelikli.size === 0) return katalogIndex
+    // Sadece bu ürünleri göster
+    return Object.fromEntries(Object.entries(katalogIndex).filter(([k]) => oncelikli.has(k)))
+  })()
 
   // Auto-save — her değişiklikte 1.5sn debounce ile localStorage'a yaz
   useEffect(() => {
@@ -490,6 +514,14 @@ export default function ReceteYaz() {
     }, 1500)
     return () => clearTimeout(autoSaveRef.current)
   }, [form, donemler, kulturel, biyolojik, takip, LS_KEY])
+
+  // Bayii ürünlerini yükle — işletme değiştiğinde
+  useEffect(() => {
+    const id = form.isletme
+    if (!id) { setBayiiUrunler({ ilaclar:[], gubreler:[] }); setBolgeUrunler({ ilaclar:[], gubreler:[] }); return }
+    api.get(`/katalog/isletme-bayii-urunler/?isletme=${id}&tip=stok`).then(r => setBayiiUrunler(r.data)).catch(() => {})
+    api.get(`/katalog/isletme-bayii-urunler/?isletme=${id}&tip=bolge`).then(r => setBolgeUrunler(r.data)).catch(() => {})
+  }, [form.isletme])
 
   useEffect(() => {
     api.get('/ciftci/danisanlarim/').then(r => setIsletmeler(r.data)).catch(() => {})
@@ -658,7 +690,26 @@ ${analizler.length === 0
       localStorage.removeItem(LS_KEY+'_kultur')
       localStorage.removeItem(LS_KEY+'_biyo')
       localStorage.removeItem(LS_KEY+'_takip')
-      navigate(isletmeParam ? '/muhendis/danisanlar' : '/muhendis/receteler')
+      // Paylaşım modalını aç
+      const isl = seciliIsletme
+      const satirlar = []
+      satirlar.push(`📋 REÇETE — ${form.tarih}`)
+      satirlar.push(`👨‍🌾 ${isl?.ciftci_ad||''} ${isl?.ciftci_soyad||''} · 🏢 ${isl?.isletme?.ad||''}`)
+      satirlar.push(`🌱 ${isl?.isletme?.urun_ad||''}${isl?.isletme?.alan_dekar ? ` · ${parseFloat(isl.isletme.alan_dekar)} da` : ''}`)
+      if (form.tani) satirlar.push(`\n🔍 Tanı: ${form.tani}`)
+      donemler.forEach((d, i) => {
+        const dolular = d.satirlar.filter(r => r.urun_id && r.urun_ad)
+        if (!dolular.length) return
+        satirlar.push(`\n💧 ${i+1}. Sulama${d.tarih ? ` (${d.tarih})` : ''}:`)
+        dolular.forEach(r => satirlar.push(`  • ${r.urun_ad} — ${r.doz||'?'} ${r.birim||'ml'}/da`))
+      })
+      if (kulturel.some(k=>k.metin.trim())) {
+        satirlar.push('\n🌿 Kültürel Önlemler:')
+        kulturel.filter(k=>k.metin.trim()).forEach(k => satirlar.push(`  • ${k.metin}`))
+      }
+      if (form.ciftciye_not) satirlar.push(`\n📝 Not: ${form.ciftciye_not}`)
+      satirlar.push(`\nonduran.com.tr`)
+      setPaylasModal({ rid, metin: satirlar.join('\n') })
     } catch (err) {
       setHata(err.response?.data ? JSON.stringify(err.response.data) : 'Kayıt başarısız.')
       setKaydediyor(false)
@@ -700,38 +751,10 @@ ${analizler.length === 0
                         🌱 {isl?.urun_ad || '—'}{isl?.cesit_ad ? ` - ${isl.cesit_ad}` : ''}
                         {isl?.alan_dekar ? `  📏 ${parseFloat(isl.alan_dekar)} da` : ''}
                         {dikimGun !== null ? `  ⏳ ${dikimGun} günlük` : ''}
+                        {isl?.ortualti_no ? <span style={{color:'#666', fontSize:'0.82rem'}}>{`  🏷️ ${isl.ortualti_no}`}</span> : ''}
                         {isl?.enlem && isl?.boylam && <>{' '}<a href={`https://maps.google.com/?q=${isl.enlem},${isl.boylam}`} target="_blank" rel="noreferrer" style={{color:'#1a7a4a'}}>📍 GPS</a></>}
                       </p>
-                      <button style={s.toprakMiniBtn} onClick={async () => {
-                        if (!toprakAcik) {
-                          try {
-                            const res = await api.get(`/ciftci/isletme/${isl.id}/toprak-analiz/`)
-                            const sirali = [...(res.data || [])].sort((a,b) => b.tarih.localeCompare(a.tarih))
-                            setToprakVeriler(sirali)
-                          } catch { setToprakVeriler([]) }
-                        }
-                        setToprakAcik(p => !p)
-                      }}>
-                        🧪 Toprak Analizi {toprakAcik ? '▲' : '▼'}
-                      </button>
                     </div>
-                    {toprakAcik && (
-                      <div style={s.toprakPanel}>
-                        {toprakVeriler.length === 0
-                          ? <p style={{color:'#aaa', fontSize:'0.82rem', margin:0}}>Toprak analizi girilmemiş.</p>
-                          : toprakVeriler.map((a, i) => (
-                            <div key={i} style={s.toprakSatir}>
-                              <span style={s.toprakTarih}>📅 {a.tarih}</span>
-                              <span>pH: <b>{a.ph ?? '—'}</b></span>
-                              <span>OM: <b>{a.organik_madde ?? '—'}%</b></span>
-                              <span>P: <b>{a.fosfor ?? '—'}</b></span>
-                              <span>K: <b>{a.potasyum ?? '—'}</b></span>
-                              <span>Tuz: <b>{a.tuz ?? '—'}</b></span>
-                            </div>
-                          ))
-                        }
-                      </div>
-                    )}
                   </div>
                 )
               })()
@@ -761,6 +784,14 @@ ${analizler.length === 0
                 <option value="onaylandi">Onaylandı</option>
               </select>
             </div>
+            <label style={s.checkLabel}>
+              <input type="checkbox" checked={bayiiStok} onChange={e => setBayiiStok(e.target.checked)} style={s.checkBox} />
+              🏪 Bayii Stok
+            </label>
+            <label style={s.checkLabel}>
+              <input type="checkbox" checked={bolgeStok} onChange={e => setBolgeStok(e.target.checked)} style={s.checkBox} />
+              📍 Bölge Bayii
+            </label>
           </div>
 
         </div>
@@ -769,7 +800,7 @@ ${analizler.length === 0
       {/* 4 bölüm */}
       <SulamaBolum
         donemler={donemler} setDonemler={setDonemler}
-        katalogIndex={katalogIndex} alanDekar={alanDekar} />
+        katalogIndex={filtreliKatalogIndex} alanDekar={alanDekar} />
 
       <NotlarBlok
         form={form} degis={degis}
@@ -782,7 +813,7 @@ ${analizler.length === 0
       {hata && <p style={s.hata}>{hata}</p>}
       <div style={s.altBar}>
         <button style={s.iptalBuyukBtn} onClick={() => navigate('/muhendis/receteler')}>Vazgeç</button>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button
             style={s.ziyaretBuyukBtn}
             onClick={() => navigate(`/muhendis/takvim${form.isletme ? `?isletme=${form.isletme}` : ''}`)}
@@ -795,6 +826,39 @@ ${analizler.length === 0
           </button>
         </div>
       </div>
+
+      {/* Paylaşım Modalı */}
+      {paylasModal && (
+        <div style={s.paylasOverlay}>
+          <div style={s.paylasModal}>
+            <div style={s.paylasUst}>
+              <span style={s.paylasBaslik}>📤 Reçeteyi Gönder</span>
+              <button style={s.paylasKapat} onClick={() => { setPaylasModal(null); navigate(isletmeParam ? '/muhendis/danisanlar' : '/muhendis/receteler') }}>✕</button>
+            </div>
+            <div style={s.paylasOnizleme}>{paylasModal.metin}</div>
+            <div style={s.paylasButonlar}>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(paylasModal.metin)}`}
+                target="_blank" rel="noreferrer"
+                style={s.waBtn}
+                onClick={() => api.patch(`/recete/${paylasModal.rid}/`, { durum: 'onaylandi' }).catch(()=>{})}
+              >
+                ✅ Onayla ve Gönder
+              </a>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(paylasModal.metin)}`}
+                target="_blank" rel="noreferrer"
+                style={s.smsBtn}
+              >
+                📤 Onaysız Gönder
+              </a>
+              <button style={s.paylasGecBtn} onClick={() => { setPaylasModal(null); navigate(isletmeParam ? '/muhendis/danisanlar' : '/muhendis/receteler') }}>
+                Geç, sadece kaydet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -864,11 +928,17 @@ const s = {
   biyoGruplar:{ flex:1, display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr', gap:'6px' },
   biyoAlan:   { display:'flex', flexDirection:'column', gap:'2px' },
 
+  checkLabel: { display:'flex', alignItems:'center', gap:'5px', fontSize:'0.78rem', color:'#555', cursor:'pointer', userSelect:'none', padding:'4px 8px', border:'1px solid #ddd', borderRadius:'6px', background:'#fafafa' },
+  checkBox:   { accentColor:'#1a7a4a', width:'15px', height:'15px', cursor:'pointer' },
   hata:  { color:'#e53e3e', fontSize:'0.85rem', margin:'4px 0 8px' },
   altBar:{ display:'flex', justifyContent:'flex-end', gap:'8px', paddingTop:'14px', borderTop:'1px solid #f0f0f0', marginTop:'8px' },
 
   // ── Notlar bloğu ──
   notlarBlok:  { background:'#fff', border:'1px solid #e8e8e8', borderRadius:'12px', marginBottom:'10px', overflow:'hidden' },
+  notTabBar:   { display:'flex', borderBottom:'1px solid #e8e8e8' },
+  notTab:      { flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'4px', padding:'12px 6px', border:'none', borderRight:'1px solid #f0f0f0', cursor:'pointer', fontFamily:'inherit', background:'#fafafa', color:'#888', transition:'background .15s', position:'relative' },
+  notTabAktif: { background:'#f0faf5', color:'#1a7a4a', borderBottom:'2px solid #1a7a4a' },
+  notBadge:    { background:'#1a7a4a', color:'#fff', borderRadius:'10px', fontSize:'0.7rem', padding:'1px 6px', fontWeight:700 },
   notSubBtn:   { width:'100%', display:'flex', alignItems:'center', gap:'10px', padding:'15px 16px', border:'none', borderBottom:'1px solid #f0f0f0', cursor:'pointer', fontFamily:'inherit', transition:'background .15s' },
   notIcerik:   { padding:'12px 16px 14px', borderBottom:'1px solid #f2f2f2' },
   notGirdi:    { padding:'13px 14px', border:'1px solid #ddd', borderRadius:'8px', fontSize:'1rem', outline:'none', width:'100%', boxSizing:'border-box', fontFamily:'inherit', minHeight:'48px' },
@@ -880,5 +950,16 @@ const s = {
   // ── Büyük alt tuşlar (muddy hand friendly) ──
   iptalBuyukBtn:   { padding:'14px 22px', background:'#f0f0f0', color:'#555', border:'none', borderRadius:'10px', cursor:'pointer', fontSize:'1rem', fontWeight:'500', minHeight:'52px' },
   ziyaretBuyukBtn: { padding:'14px 22px', background:'#f0f0f0', color:'#1a7a4a', border:'1px solid #c8e6d4', borderRadius:'10px', cursor:'pointer', fontSize:'1rem', fontWeight:'500', minHeight:'52px' },
+  gonderBuyukBtn:  { padding:'14px 22px', background:'#1565c0', color:'#fff', border:'none', borderRadius:'10px', cursor:'pointer', fontSize:'1rem', fontWeight:'600', minHeight:'52px' },
   kaydetBuyukBtn:  { padding:'14px 32px', background:'#1a7a4a', color:'#fff', border:'none', borderRadius:'10px', cursor:'pointer', fontSize:'1rem', fontWeight:'700', minHeight:'52px' },
+  paylasOverlay:   { position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:600, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' },
+  paylasModal:     { background:'#fff', borderRadius:'14px', width:'100%', maxWidth:'420px', boxShadow:'0 12px 48px rgba(0,0,0,0.25)', display:'flex', flexDirection:'column', overflow:'hidden' },
+  paylasUst:       { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px', borderBottom:'1px solid #eee' },
+  paylasBaslik:    { fontSize:'1.05rem', fontWeight:'700', color:'#1a1a1a' },
+  paylasKapat:     { background:'none', border:'none', fontSize:'1.2rem', cursor:'pointer', color:'#aaa' },
+  paylasOnizleme:  { padding:'14px 20px', fontSize:'0.82rem', color:'#444', whiteSpace:'pre-wrap', lineHeight:1.6, maxHeight:'200px', overflowY:'auto', background:'#f8f8f8', borderBottom:'1px solid #eee' },
+  paylasButonlar:  { padding:'14px 20px', display:'flex', flexDirection:'column', gap:'10px' },
+  waBtn:           { display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'14px', background:'#25d366', color:'#fff', borderRadius:'10px', textDecoration:'none', fontWeight:'700', fontSize:'1rem' },
+  smsBtn:          { display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'14px', background:'#3b82f6', color:'#fff', borderRadius:'10px', textDecoration:'none', fontWeight:'700', fontSize:'1rem' },
+  paylasGecBtn:    { padding:'12px', background:'#f0f0f0', color:'#777', border:'none', borderRadius:'10px', cursor:'pointer', fontSize:'0.9rem' },
 }
