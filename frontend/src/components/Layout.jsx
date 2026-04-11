@@ -20,9 +20,7 @@ const menuler = {
     { yol: '/muhendis/takvim',    etiket: 'Takvim' },
   ],
   ciftci: [
-    { yol: '/ciftci',             etiket: 'Reçetelerim' },
     { yol: '/ciftci/isletmeler',  etiket: 'İşletmelerim' },
-    { yol: '/ciftci/talepler',    etiket: 'Talepler' },
   ],
   uretici: [
     { yol: '/uretici',            etiket: 'Katalogum' },
@@ -40,6 +38,7 @@ export default function Layout({ children }) {
   const location  = useLocation()
   const [drawerAcik, setDrawerAcik] = useState(false)
   const [talepPanel, setTalepPanel] = useState(false)
+  const [ayarlarAcik, setAyarlarAcik] = useState(false)
   const [talepler, setTalepler]     = useState([])
   const [islemde, setIslemde]       = useState(null)
   const [icmalAcik, setIcmalAcik]       = useState(false)
@@ -48,6 +47,26 @@ export default function Layout({ children }) {
   const [icmalReceteler, setIcmalReceteler] = useState([])
   const [icmalYukleniyor, setIcmalYukleniyor] = useState(false)
   const [haritaAcik, setHaritaAcik] = useState(false)
+  const [bayiiTalepler, setBayiiTalepler] = useState([])
+  const [bayiiTalepPanel, setBayiiTalepPanel] = useState(false)
+  const [bayiiTalepIslemde, setBayiiTalepIslemde] = useState(null)
+  const [bayiiIcmalAcik, setBayiiIcmalAcik] = useState(false)
+  const [bayiiIcmalData, setBayiiIcmalData] = useState([])
+  const [bayiiIcmalSecili, setBayiiIcmalSecili] = useState(null)
+  const [bayiiIcmalYukleniyor, setBayiiIcmalYukleniyor] = useState(false)
+  const [danismanPanel, setDanismanPanel] = useState(false)
+  const [danIsletmeler, setDanIsletmeler] = useState([])
+  const [danIsletme, setDanIsletme]       = useState('')
+  const [danMuhendisList, setDanMuhendisList] = useState([])
+  const [danIslemde, setDanIslemde]       = useState(null)
+  const [danHata, setDanHata]             = useState('')
+  const [danAra, setDanAra]               = useState('')
+  const [bayiiPanel, setBayiiPanel]       = useState(false)
+  const [tumBayii, setTumBayii]           = useState([])
+  const [bayiiAra, setBayiiAra]           = useState('')
+  const [bayiiIslemde, setBayiiIslemde]   = useState(null)
+  const [bayiiHata, setBayiiHata]         = useState('')
+  const [bayiilerim, setBayiilerim]       = useState([])
 
   const menu = menuler[kullanici?.rol] || []
 
@@ -61,6 +80,31 @@ export default function Layout({ children }) {
     if (kullanici?.rol !== 'muhendis') return
     api.get('/ciftci/gelen-talepler/').then(r => setTalepler(r.data)).catch(() => {})
   }, [kullanici])
+
+  // Bayii ise gelen çiftçi taleplerini yükle
+  useEffect(() => {
+    if (kullanici?.rol !== 'bayii') return
+    api.get('/ciftci/bayii/bekleyen/').then(r => setBayiiTalepler(r.data)).catch(() => {})
+  }, [kullanici])
+
+  const bayiiIcmalAc = async () => {
+    setBayiiIcmalAcik(true)
+    setBayiiIcmalSecili(null)
+    setBayiiIcmalYukleniyor(true)
+    try {
+      const r = await api.get('/katalog/bayii/musterilerim/')
+      setBayiiIcmalData(r.data)
+    } catch { alert('İcmal yüklenemedi.') }
+    finally { setBayiiIcmalYukleniyor(false) }
+  }
+
+  const bayiiTalepYanitla = async (id, durum) => {
+    setBayiiTalepIslemde(id)
+    try {
+      await api.patch(`/ciftci/bayii/yanit/${id}/`, { durum })
+      setBayiiTalepler(p => p.filter(t => t.id !== id))
+    } finally { setBayiiTalepIslemde(null) }
+  }
 
   const talepYanitla = async (id, karar) => {
     setIslemde(id)
@@ -114,6 +158,61 @@ export default function Layout({ children }) {
     }
   }
 
+  const danismanPanelAc = async () => {
+    setDanismanPanel(true)
+    setDanHata('')
+    setDanIsletme('')
+    setDanAra('')
+    try {
+      const [isl, muh] = await Promise.all([
+        api.get('/ciftci/isletmelerim/'),
+        api.get('/ciftci/muhendis/listele/'),
+      ])
+      setDanIsletmeler(isl.data)
+      setDanMuhendisList(muh.data)
+    } catch { setDanHata('Veriler yüklenemedi.') }
+  }
+
+  const danismanTalepGonder = async (muhendisId) => {
+    if (!danIsletme) { setDanHata('Lütfen önce bir işletme seçin.'); return }
+    setDanIslemde(muhendisId)
+    setDanHata('')
+    try {
+      await api.post('/ciftci/muhendise-talep/', { muhendis_id: muhendisId, isletme_id: parseInt(danIsletme) })
+      setDanismanPanel(false)
+    } catch (err) {
+      console.error('Danışman talep hatası:', err.response?.status, err.response?.data)
+      setDanHata(err.response?.data?.hata || err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Talep gönderilemedi.')
+    } finally { setDanIslemde(null) }
+  }
+
+  const bayiiPanelAc = async () => {
+    setBayiiPanel(true)
+    setBayiiHata('')
+    setBayiiAra('')
+    try {
+      const [b, tb] = await Promise.all([
+        api.get('/ciftci/bayiilerim/'),
+        api.get('/katalog/bayii/listele/'),
+      ])
+      setBayiilerim(b.data)
+      setTumBayii(tb.data)
+    } catch { setBayiiHata('Bayii listesi yüklenemedi.') }
+  }
+
+  const bayiiTalepGonder = async (bayiiId) => {
+    setBayiiIslemde(bayiiId)
+    setBayiiHata('')
+    try {
+      await api.post('/ciftci/bayii/talep/', { bayii: bayiiId })
+      const b = await api.get('/ciftci/bayiilerim/')
+      setBayiilerim(b.data)
+    } catch (err) {
+      console.error('Bayii talep hatası:', err.response?.status, err.response?.data)
+      setBayiiHata(err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Talep gönderilemedi.')
+    } finally { setBayiiIslemde(null) }
+  }
+
   const icmalKapat = () => {
     setIcmalAcik(false)
     setIcmalSecili(null)
@@ -135,7 +234,7 @@ export default function Layout({ children }) {
         {/* Logo — ortalı */}
         <div style={s.logo} onClick={() => git('/')}>
           <span style={s.logoAd}>www.onduran.com.tr</span>
-          <span style={s.logoAlt}>Onduran Uygulama</span>
+          <span style={s.logoAlt}>Onduran Tarım</span>
         </div>
       </nav>
 
@@ -169,6 +268,46 @@ export default function Layout({ children }) {
         ))}
 
         <div style={s.drawerAyrac} />
+
+        {/* Çiftçi */}
+        {kullanici?.rol === 'ciftci' && (
+          <>
+            <div style={s.drawerAyrac} />
+            <button style={s.drawerItem} onClick={() => git('/ciftci/recetelerim')}>
+              📋 Reçetelerim
+            </button>
+            <div style={s.drawerAyrac} />
+            <button style={{ ...s.drawerItem, display:'flex', alignItems:'center', gap:'8px' }}
+              onClick={() => setAyarlarAcik(p => !p)}>
+              <span>⚙️ Ayarlar</span>
+              <span style={{ marginLeft:'auto', fontSize:'0.75rem', color:'#aaa' }}>{ayarlarAcik ? '▲' : '▼'}</span>
+            </button>
+            {ayarlarAcik && (
+              <div style={{ paddingLeft:'12px' }}>
+                <button style={{ ...s.drawerItem, fontSize:'0.92rem' }} onClick={() => git('/ciftci/talepler')}>
+                  🔔 İzinler
+                </button>
+                <button style={{ ...s.drawerItem, fontSize:'0.92rem' }} onClick={() => { setDrawerAcik(false); danismanPanelAc() }}>
+                  👨‍💼 Danışman Ekle
+                </button>
+                <button style={{ ...s.drawerItem, fontSize:'0.92rem' }} onClick={() => {
+                  setDrawerAcik(false)
+                  if (location.pathname === '/ciftci/isletmeler') {
+                    window.dispatchEvent(new Event('isletme-ekle-ac'))
+                  } else {
+                    navigate('/ciftci/isletmeler')
+                    setTimeout(() => window.dispatchEvent(new Event('isletme-ekle-ac')), 300)
+                  }
+                }}>
+                  🏢 İşletme Ekle / Düzenle / Kaldır
+                </button>
+                <button style={{ ...s.drawerItem, fontSize:'0.92rem' }} onClick={() => { setDrawerAcik(false); bayiiPanelAc() }}>
+                  🏪 Bayii Ekle
+                </button>
+              </div>
+            )}
+          </>
+        )}
 
         {/* Mühendis: gelen danışmanlık talepleri */}
         {kullanici?.rol === 'muhendis' && (
@@ -214,6 +353,42 @@ export default function Layout({ children }) {
           </>
         )}
 
+        {/* Bayii: reçete icmal + çiftçi talepleri */}
+        {kullanici?.rol === 'bayii' && (
+          <>
+            <div style={s.drawerAyrac} />
+            <button style={s.drawerItem} onClick={() => { setDrawerAcik(false); bayiiIcmalAc() }}>
+              📋 Reçete İcmali
+            </button>
+            <div style={s.drawerAyrac} />
+            <button style={{ ...s.drawerItem, display:'flex', alignItems:'center', gap:'8px' }}
+              onClick={() => setBayiiTalepPanel(p => !p)}>
+              <span>🤝 Çiftçi Talepleri</span>
+              {bayiiTalepler.length > 0 && <span style={s.drawerBadge}>{bayiiTalepler.length}</span>}
+              <span style={{ marginLeft:'auto', fontSize:'0.75rem', color:'#aaa' }}>{bayiiTalepPanel ? '▲' : '▼'}</span>
+            </button>
+            {bayiiTalepPanel && (
+              <div style={s.talepPanel}>
+                {bayiiTalepler.length === 0
+                  ? <p style={s.talepBos}>Bekleyen talep yok.</p>
+                  : bayiiTalepler.map(t => (
+                    <div key={t.id} style={s.talepKart}>
+                      <div style={s.talepAd}>👨‍🌾 {t.ciftci_ad} {t.ciftci_soyad}</div>
+                      <div style={s.talepTarih}>{new Date(t.talep_tarihi).toLocaleDateString('tr-TR')}</div>
+                      <div style={s.talepButonlar}>
+                        <button style={s.kabul} disabled={bayiiTalepIslemde === t.id}
+                          onClick={() => bayiiTalepYanitla(t.id, 'onaylandi')}>✓ Kabul Et</button>
+                        <button style={s.red} disabled={bayiiTalepIslemde === t.id}
+                          onClick={() => bayiiTalepYanitla(t.id, 'reddedildi')}>✕ Reddet</button>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            )}
+          </>
+        )}
+
         <button style={s.drawerItem} onClick={() => git('/profil')}>
           Profil
         </button>
@@ -229,6 +404,201 @@ export default function Layout({ children }) {
 
       {/* ── Ziyaret Harita Modal ── */}
       {haritaAcik && <ZiyaretHarita onKapat={() => setHaritaAcik(false)} />}
+
+      {/* ── Bayii Reçete İcmal Modal ── */}
+      {bayiiIcmalAcik && (
+        <div style={s.icmalOverlay}>
+          <div style={s.icmalModal}>
+            <div style={s.icmalUst}>
+              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                {bayiiIcmalSecili && (
+                  <button style={s.icmalGeri} onClick={() => setBayiiIcmalSecili(null)}>← Geri</button>
+                )}
+                <div>
+                  <div style={s.icmalBaslik}>📋 Reçete İcmali</div>
+                  {bayiiIcmalSecili && (
+                    <div style={s.icmalMeta}>👨‍🌾 {bayiiIcmalSecili.ciftci_ad} {bayiiIcmalSecili.ciftci_soyad}</div>
+                  )}
+                </div>
+              </div>
+              <div style={{ display:'flex', gap:'8px' }}>
+                {bayiiIcmalSecili && (
+                  <button style={s.icmalYazdir} onClick={() => window.print()}>🖨️ Yazdır / PDF</button>
+                )}
+                <button style={s.icmalKapatBtn} onClick={() => { setBayiiIcmalAcik(false); setBayiiIcmalSecili(null) }}>✕ Kapat</button>
+              </div>
+            </div>
+
+            <div style={s.icmalIcerik}>
+              {bayiiIcmalYukleniyor && <p style={{ textAlign:'center', color:'#aaa', padding:'20px' }}>Yükleniyor…</p>}
+
+              {!bayiiIcmalYukleniyor && !bayiiIcmalSecili && (
+                <>
+                  <label style={{ fontSize:'0.85rem', color:'#555' }}>👨‍🌾 Çiftçi seçin:</label>
+                  <select
+                    style={{ width:'100%', padding:'9px 12px', border:'1px solid #ddd', borderRadius:'8px', fontSize:'0.92rem', outline:'none', fontFamily:'inherit' }}
+                    defaultValue=''
+                    onChange={e => {
+                      const idx = parseInt(e.target.value)
+                      if (!isNaN(idx)) setBayiiIcmalSecili(bayiiIcmalData[idx])
+                    }}
+                  >
+                    <option value=''>— Seçin —</option>
+                    {bayiiIcmalData.map((m, idx) => (
+                      <option key={idx} value={idx}>{m.ciftci_ad} {m.ciftci_soyad}</option>
+                    ))}
+                  </select>
+                </>
+              )}
+
+              {!bayiiIcmalYukleniyor && bayiiIcmalSecili && (
+                <div style={s.icmalBlok}>
+                  <div style={s.icmalIsletmeBaslik}>
+                    <span>👨‍🌾 {bayiiIcmalSecili.ciftci_ad} {bayiiIcmalSecili.ciftci_soyad}</span>
+                    <span style={s.icmalSayac}>{bayiiIcmalSecili.kalemler?.length || 0} kalem</span>
+                  </div>
+                  {!bayiiIcmalSecili.kalemler?.length ? (
+                    <p style={{ color:'#aaa', fontStyle:'italic', padding:'12px', margin:0 }}>Reçete bulunamadı.</p>
+                  ) : (
+                    <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                      <thead>
+                        <tr style={{ background:'#f0faf5' }}>
+                          {['Tarih','İşletme','Ürün','Doz'].map(h => (
+                            <th key={h} style={{ padding:'6px 10px', textAlign:'left', fontSize:'11px', color:'#666', fontWeight:600 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bayiiIcmalSecili.kalemler.map((k, i) => (
+                          <tr key={i}>
+                            <td style={s.icmalTd}>{k.recete_tarih}</td>
+                            <td style={s.icmalTd}>{k.isletme_ad}</td>
+                            <td style={s.icmalTd}>{k.ilac_ad || k.gubre_ad || '—'}</td>
+                            <td style={s.icmalTd}>{k.doz_dekar} {k.birim}/da</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bayii Ekle Modal (Çiftçi) ── */}
+      {bayiiPanel && (
+        <div style={s.icmalOverlay} onClick={() => setBayiiPanel(false)}>
+          <div style={{ ...s.icmalModal, maxWidth:'440px' }} onClick={e => e.stopPropagation()}>
+            <div style={s.icmalUst}>
+              <div style={s.icmalBaslik}>🏪 Bayii Ekle</div>
+              <button style={s.icmalKapatBtn} onClick={() => setBayiiPanel(false)}>✕ Kapat</button>
+            </div>
+            <div style={{ padding:'12px 20px 16px', display:'flex', flexDirection:'column', gap:'10px' }}>
+              {bayiiHata && <p style={{ color:'#e05353', fontSize:'0.85rem', margin:0 }}>{bayiiHata}</p>}
+              <input
+                placeholder="Bayii adı veya ilçe ara..."
+                value={bayiiAra}
+                onChange={e => setBayiiAra(e.target.value)}
+                style={{ padding:'9px 12px', border:'1px solid #ddd', borderRadius:'8px', fontSize:'0.9rem', outline:'none', fontFamily:'inherit' }}
+                autoFocus
+              />
+              <div style={{ display:'flex', flexDirection:'column', gap:'8px', maxHeight:'320px', overflowY:'auto' }}>
+                {tumBayii
+                  .filter(b =>
+                    b.firma_adi.toLowerCase().includes(bayiiAra.toLowerCase()) ||
+                    b.il?.toLowerCase().includes(bayiiAra.toLowerCase()) ||
+                    b.ilce?.toLowerCase().includes(bayiiAra.toLowerCase())
+                  )
+                  .map(b => {
+                    const ekli = bayiilerim.some(x => x.bayii === b.id)
+                    return (
+                      <div key={b.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 12px', background:'#f8fdf9', border:'1px solid #d4eadb', borderRadius:'8px' }}>
+                        <div>
+                          <div style={{ fontWeight:'600', fontSize:'0.92rem' }}>{b.firma_adi}</div>
+                          <div style={{ fontSize:'0.78rem', color:'#888' }}>{b.ilce}, {b.il}</div>
+                        </div>
+                        {ekli ? (
+                          <span style={{ fontSize:'0.8rem', color:'#aaa' }}>Ekli</span>
+                        ) : (
+                          <button
+                            style={{ padding:'6px 14px', background:'#1a7a4a', color:'#fff', border:'none', borderRadius:'7px', cursor:'pointer', fontSize:'0.85rem', fontWeight:'600' }}
+                            disabled={bayiiIslemde === b.id}
+                            onClick={() => bayiiTalepGonder(b.id)}
+                          >
+                            {bayiiIslemde === b.id ? '…' : 'Talep'}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })
+                }
+                {tumBayii.length === 0 && !bayiiHata && (
+                  <p style={{ color:'#aaa', textAlign:'center', padding:'12px' }}>Yükleniyor…</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Danışman Ekle Modal (Çiftçi) ── */}
+      {danismanPanel && (
+        <div style={s.icmalOverlay} onClick={() => setDanismanPanel(false)}>
+          <div style={{ ...s.icmalModal, maxWidth:'440px' }} onClick={e => e.stopPropagation()}>
+            <div style={s.icmalUst}>
+              <div style={s.icmalBaslik}>👨‍💼 Danışman Ekle</div>
+              <button style={s.icmalKapatBtn} onClick={() => setDanismanPanel(false)}>✕ Kapat</button>
+            </div>
+            <div style={{ padding:'16px 20px', display:'flex', flexDirection:'column', gap:'12px' }}>
+              {danHata && <p style={{ color:'#e05353', fontSize:'0.85rem', margin:0 }}>{danHata}</p>}
+              <div>
+                <label style={{ fontSize:'0.82rem', fontWeight:'600', color:'#555', display:'block', marginBottom:'6px' }}>İşletme *</label>
+                <select
+                  style={{ width:'100%', padding:'9px 12px', border:'1px solid #ddd', borderRadius:'8px', fontSize:'0.92rem', outline:'none', fontFamily:'inherit' }}
+                  value={danIsletme}
+                  onChange={e => { setDanIsletme(e.target.value); setDanHata('') }}
+                >
+                  <option value=''>— İşletme seçin —</option>
+                  {danIsletmeler.map(i => (
+                    <option key={i.id} value={i.id}>{i.ad}{i.urun_ad ? ` · ${i.urun_ad}` : ''}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize:'0.82rem', fontWeight:'600', color:'#555', display:'block', marginBottom:'6px' }}>Danışman Mühendis</label>
+                <input
+                  placeholder="Ad ile ara..."
+                  value={danAra}
+                  onChange={e => setDanAra(e.target.value)}
+                  style={{ width:'100%', padding:'9px 12px', border:'1px solid #ddd', borderRadius:'8px', fontSize:'0.9rem', outline:'none', fontFamily:'inherit', boxSizing:'border-box' }}
+                />
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:'8px', maxHeight:'260px', overflowY:'auto' }}>
+                {danMuhendisList
+                  .filter(m => m.ad.toLowerCase().includes(danAra.toLowerCase()))
+                  .map(m => (
+                    <div key={m.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 12px', background:'#f8fdf9', border:'1px solid #d4eadb', borderRadius:'8px' }}>
+                      <span style={{ fontWeight:'600', fontSize:'0.92rem' }}>👨‍💼 {m.ad}</span>
+                      <button
+                        style={{ padding:'6px 14px', background:'#1a7a4a', color:'#fff', border:'none', borderRadius:'7px', cursor:'pointer', fontSize:'0.85rem', fontWeight:'600' }}
+                        disabled={danIslemde === m.id}
+                        onClick={() => danismanTalepGonder(m.id)}
+                      >
+                        {danIslemde === m.id ? '…' : 'Talep Gönder'}
+                      </button>
+                    </div>
+                  ))
+                }
+                {danMuhendisList.length === 0 && !danHata && (
+                  <p style={{ color:'#aaa', textAlign:'center', padding:'12px' }}>Yükleniyor…</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── İcmal Modal ── */}
       {icmalAcik && (
@@ -258,99 +628,86 @@ export default function Layout({ children }) {
             </div>
 
             <div style={s.icmalIcerik} id="icmal-yazdir">
-              {icmalYukleniyor ? (
-                <p style={{ textAlign:'center', color:'#aaa', padding:'30px' }}>Yükleniyor…</p>
-              ) : !icmalSecili ? (
-                /* ── Adım 1: Çiftçi Seçimi ── */
-                <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-                  <p style={{ color:'#888', fontSize:'0.85rem', margin:'0 0 6px' }}>İcmalini görmek istediğiniz çiftçiyi seçin:</p>
-                  {icmalDanisanlar.length === 0
-                    ? <p style={{ color:'#aaa', textAlign:'center', padding:'20px' }}>Danışan bulunamadı.</p>
-                    : icmalDanisanlar.map((grup, idx) => (
-                      <button key={idx} style={s.icmalCiftciKart} onClick={() => icmalSecilisineGit(grup)}>
-                        <div style={{ flex:1 }}>
-                          <div style={s.icmalCiftciAd}>👨‍🌾 {grup.ciftci_ad} {grup.ciftci_soyad}</div>
-                          <div style={s.icmalCiftciMeta}>
-                            {grup.isletmeler.map(isl => `🏢 ${isl.ad}`).join('  ·  ')}
-                          </div>
-                        </div>
-                        <span style={s.icmalCiftciOk}>›</span>
-                      </button>
-                    ))
-                  }
-                </div>
-              ) : (
-                /* ── Adım 2: Seçili çiftçinin reçeteleri ── */
-                <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
-                  {/* Yazdırma başlığı — yalnızca print'te görünür */}
-                  <div className="print-only" style={{ display:'none' }}>
-                    <h2 style={{ margin:'0 0 4px', color:'#1a7a4a' }}>Reçete İcmali</h2>
-                    <p style={{ margin:'0 0 16px', color:'#555', fontSize:'0.9rem' }}>
-                      {kullanici?.first_name || kullanici?.username} &nbsp;·&nbsp;
-                      {new Date().toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' })}
-                    </p>
+              {/* Dropdown */}
+              <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px' }}>
+                <label style={{ fontSize:'0.85rem', color:'#555', whiteSpace:'nowrap' }}>👨‍🌾 Çiftçi:</label>
+                <select
+                  style={{ flex:1, padding:'9px 12px', border:'1px solid #ddd', borderRadius:'8px', fontSize:'0.92rem', outline:'none', fontFamily:'inherit' }}
+                  value={icmalSecili ? icmalDanisanlar.indexOf(icmalSecili) : ''}
+                  onChange={e => {
+                    const idx = parseInt(e.target.value)
+                    if (!isNaN(idx)) icmalSecilisineGit(icmalDanisanlar[idx])
+                    else { setIcmalSecili(null); setIcmalReceteler([]) }
+                  }}
+                >
+                  <option value=''>— Seçin —</option>
+                  {icmalDanisanlar.map((g, idx) => (
+                    <option key={idx} value={idx}>{g.ciftci_ad} {g.ciftci_soyad} ({g.isletmeler.length} işletme)</option>
+                  ))}
+                </select>
+              </div>
+
+              {icmalYukleniyor && <p style={{ textAlign:'center', color:'#aaa', padding:'20px' }}>Yükleniyor…</p>}
+
+              {icmalSecili && !icmalYukleniyor && (
+                <div style={s.icmalBlok}>
+                  <div style={s.icmalIsletmeBaslik}>
+                    <span>👨‍🌾 {icmalSecili.ciftci_ad} {icmalSecili.ciftci_soyad}</span>
+                    {icmalSecili.isletmeler?.map(isl => (
+                      <span key={isl.id} style={{ fontWeight:400, opacity:.85, fontSize:'0.85rem' }}>
+                        🏢 {isl.ad}{isl.urun_ad ? ` · 🌱 ${isl.urun_ad}` : ''}{isl.alan_dekar ? ` · ${parseFloat(isl.alan_dekar)} da` : ''}
+                      </span>
+                    ))}
+                    <span style={s.icmalSayac}>{icmalReceteler.length} reçete</span>
                   </div>
-                  <div style={s.icmalBlok}>
-                    <div style={s.icmalIsletmeBaslik}>
-                      <span>👨‍🌾 {icmalSecili.ciftci_ad} {icmalSecili.ciftci_soyad}</span>
-                      {icmalSecili.isletmeler?.map(isl => (
-                        <span key={isl.id} style={{ fontWeight:400, opacity:.85, fontSize:'0.85rem' }}>
-                          🏢 {isl.ad}{isl.urun_ad ? ` · 🌱 ${isl.urun_ad}` : ''}{isl.alan_dekar ? ` · ${parseFloat(isl.alan_dekar)} da` : ''}
-                        </span>
-                      ))}
-                      <span style={s.icmalSayac}>{icmalReceteler.length} reçete</span>
-                    </div>
-                    {icmalReceteler.length === 0
-                      ? <p style={{ color:'#aaa', fontStyle:'italic', padding:'12px', margin:0 }}>Bu işletmeye ait reçete bulunamadı.</p>
-                      : <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                          <thead>
-                            <tr style={{ background:'#f0faf5' }}>
-                              {['Tarih','Tanı','Uygulanan Ürünler','Durum'].map(h => (
-                                <th key={h} style={{ padding:'6px 10px', textAlign:'left', fontSize:'11px', color:'#666', fontWeight:600 }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {icmalReceteler.map(r => {
-                              const kalemler = (r.adimlar||[]).flatMap(a => (a.kalemler||[]).map(k => ({
-                                ad: k.ilac_ad || k.gubre_ad || '—',
-                                doz: k.doz_dekar,
-                                birim: k.birim,
-                                toplam: k.toplam_miktar,
-                              }))).filter(k => k.ad !== '—')
-                              return (
-                                <tr key={r.id}>
-                                  <td style={s.icmalTd}>{r.tarih||'—'}</td>
-                                  <td style={s.icmalTd}>{r.tani||'—'}</td>
-                                  <td style={{ ...s.icmalTd, padding: 0 }}>
-                                    {kalemler.length === 0 ? <span style={{ padding:'5px 10px', display:'block', color:'#aaa' }}>—</span>
+                  {icmalReceteler.length === 0
+                    ? <p style={{ color:'#aaa', fontStyle:'italic', padding:'12px', margin:0 }}>Reçete bulunamadı.</p>
+                    : <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                        <thead>
+                          <tr style={{ background:'#f0faf5' }}>
+                            {['Tarih','Tanı','Uygulanan Ürünler','Durum'].map(h => (
+                              <th key={h} style={{ padding:'6px 10px', textAlign:'left', fontSize:'11px', color:'#666', fontWeight:600 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {icmalReceteler.map(r => {
+                            const kalemler = (r.adimlar||[]).flatMap(a => (a.kalemler||[]).map(k => ({
+                              ad: k.ilac_ad || k.gubre_ad || '—',
+                              doz: k.doz_dekar, birim: k.birim, toplam: k.toplam_miktar,
+                            }))).filter(k => k.ad !== '—')
+                            return (
+                              <tr key={r.id}>
+                                <td style={s.icmalTd}>{r.tarih||'—'}</td>
+                                <td style={s.icmalTd}>{r.tani||'—'}</td>
+                                <td style={{ ...s.icmalTd, padding:0 }}>
+                                  {kalemler.length === 0
+                                    ? <span style={{ padding:'5px 10px', display:'block', color:'#aaa' }}>—</span>
                                     : <table style={{ width:'100%', borderCollapse:'collapse' }}>
                                         <tbody>
                                           {kalemler.map((k, i) => (
                                             <tr key={i} style={{ borderBottom: i < kalemler.length-1 ? '1px solid #f5f5f5' : 'none' }}>
                                               <td style={{ padding:'4px 10px', fontSize:'0.82rem', color:'#1a1a1a' }}>{k.ad}</td>
                                               <td style={{ padding:'4px 6px', fontSize:'0.78rem', color:'#666', whiteSpace:'nowrap' }}>
-                                                {k.doz ? `${k.doz} ${k.birim}/da` : ''}
-                                                {k.toplam ? ` · ${k.toplam} ${k.birim}` : ''}
+                                                {k.doz ? `${k.doz} ${k.birim}/da` : ''}{k.toplam ? ` · ${k.toplam} ${k.birim}` : ''}
                                               </td>
                                             </tr>
                                           ))}
                                         </tbody>
                                       </table>
-                                    }
-                                  </td>
-                                  <td style={{ ...s.icmalTd, verticalAlign:'top' }}>
-                                    <span style={{ padding:'2px 8px', borderRadius:'10px', fontSize:'11px', background:r.durum==='onaylandi'?'#e8f5ee':'#fff8e1', color:r.durum==='onaylandi'?'#1a7a4a':'#b7791f' }}>
-                                      {r.durum==='onaylandi'?'Onaylı':'Taslak'}
-                                    </span>
-                                  </td>
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                    }
-                  </div>
+                                  }
+                                </td>
+                                <td style={{ ...s.icmalTd, verticalAlign:'top' }}>
+                                  <span style={{ padding:'2px 8px', borderRadius:'10px', fontSize:'11px', background:r.durum==='onaylandi'?'#e8f5ee':'#fff8e1', color:r.durum==='onaylandi'?'#1a7a4a':'#b7791f' }}>
+                                    {r.durum==='onaylandi'?'Onaylı':'Taslak'}
+                                  </span>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                  }
                 </div>
               )}
             </div>

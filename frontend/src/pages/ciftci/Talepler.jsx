@@ -8,13 +8,18 @@ export default function Talepler() {
   const navigate = useNavigate()
   const { kullanici, yukleniyor: authYukleniyor } = useContext(AuthContext)
   const { isMobile } = useBreakpoint()
-  const [tab, setTab] = useState('muhendis')
+  const [tab, setTab] = useState('danismanlar')
 
-  // Mühendis talepleri
-  const [talepler, setTalepler]         = useState([])
-  const [talepYukleniyor, setTalepYukleniyor] = useState(true)
+  // Danışmanlarım (onaylı)
+  const [danismanlar, setDanismanlar]   = useState([])
+  const [danYukleniyor, setDanYukleniyor] = useState(true)
+  const [danIslemde, setDanIslemde]     = useState(null)
+
+  // Mühendisten gelen talepler (çiftçi kabul/red edecek)
+  const [bekleyenler, setBekleyenler]   = useState([])
   const [islemde, setIslemde]           = useState(null)
-  const [talepHata, setTalepHata]       = useState('')
+  // Çiftçinin mühendise gönderdiği talepler
+  const [gonderilenler, setGonderilenler] = useState([])
 
   // Bayii
   const [bayiilerim, setBayiilerim]     = useState([])
@@ -27,11 +32,17 @@ export default function Talepler() {
 
   const yukle = () => {
     if (!kullanici || kullanici.rol !== 'ciftci') { navigate('/giris'); return }
-    setTalepYukleniyor(true)
-    api.get('/ciftci/talepler/')
-      .then(res => setTalepler(res.data))
-      .catch(() => setTalepHata('Talepler yüklenirken hata oluştu.'))
-      .finally(() => setTalepYukleniyor(false))
+    setDanYukleniyor(true)
+    Promise.all([
+      api.get('/ciftci/danismanlarim-ciftci/'),
+      api.get('/ciftci/talepler/'),
+      api.get('/ciftci/gonderilen-talepler/'),
+    ]).then(([dan, bek, gon]) => {
+      setDanismanlar(dan.data)
+      setBekleyenler(bek.data)
+      setGonderilenler(gon.data)
+    }).catch(() => {})
+      .finally(() => setDanYukleniyor(false))
   }
 
   const bayiileriYukle = () => {
@@ -48,12 +59,33 @@ export default function Talepler() {
     bayiileriYukle()
   }, [authYukleniyor, kullanici])
 
+  // Mühendisten gelen taleplere yanıt (bekleyen tab'da gösterilecek)
   const talepYanitla = async (id, karar) => {
     setIslemde(id)
     try {
       await api.post(`/ciftci/talepler/${id}/yanit/`, { karar })
       yukle()
-    } catch { /* ignore */ } finally { setIslemde(null) }
+    } catch { } finally { setIslemde(null) }
+  }
+
+  const danismanKaldir = async (id) => {
+    if (!window.confirm('Bu danışmanlık ilişkisini kaldırmak istediğinize emin misiniz?')) return
+    setDanIslemde(id)
+    try {
+      await api.patch(`/ciftci/danismanlarim-ciftci/${id}/guncelle/`, { aksiyon: 'iptal' })
+      setDanismanlar(p => p.filter(d => d.id !== id))
+    } catch { alert('İşlem başarısız.') }
+    finally { setDanIslemde(null) }
+  }
+
+  const bayiiKaldir = async (id) => {
+    if (!window.confirm('Bayii ilişkisini kaldırmak istediğinize emin misiniz?')) return
+    setBayiiIslemde(id)
+    try {
+      await api.delete(`/ciftci/bayiilerim/${id}/kaldir/`)
+      setBayiilerim(p => p.filter(b => b.id !== id))
+    } catch { alert('İşlem başarısız.') }
+    finally { setBayiiIslemde(null) }
   }
 
   const bayiiListesiAc = async () => {
@@ -79,8 +111,8 @@ export default function Talepler() {
 
   if (authYukleniyor) return <div style={s.yuklenme}>Yükleniyor...</div>
 
-  const baglinaBayii    = bayiilerim.filter(b => b.durum === 'onaylandi')
-  const bekleyenBayii   = bayiilerim.filter(b => b.durum === 'bekliyor')
+  const baglinaBayii  = bayiilerim.filter(b => b.durum === 'onaylandi')
+  const bekleyenBayii = bayiilerim.filter(b => b.durum === 'bekliyor')
   const filtrelenmisBayii = tumBayii.filter(b =>
     b.firma_adi.toLowerCase().includes(bayiiAra.toLowerCase()) ||
     b.il.toLowerCase().includes(bayiiAra.toLowerCase()) ||
@@ -90,41 +122,75 @@ export default function Talepler() {
 
   return (
     <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
-      <h2 style={s.baslik}>Talepler</h2>
+      <h2 style={s.baslik}>İzinler</h2>
 
       <div style={s.tabBar}>
-        <button style={{...s.tabBtn, ...(tab === 'muhendis' ? s.tabAktif : {})}} onClick={() => setTab('muhendis')}>
-          Mühendis Talepleri {talepler.length > 0 && <span style={s.rozet}>{talepler.length}</span>}
+        <button style={{...s.tabBtn, ...(tab === 'danismanlar' ? s.tabAktif : {})}} onClick={() => setTab('danismanlar')}>
+          👨‍💼 Danışmanlarım
+        </button>
+        <button style={{...s.tabBtn, ...(tab === 'gonderilen' ? s.tabAktif : {})}} onClick={() => setTab('gonderilen')}>
+          Gönderilen {gonderilenler.length > 0 && <span style={s.rozet}>{gonderilenler.length}</span>}
         </button>
         <button style={{...s.tabBtn, ...(tab === 'bayii' ? s.tabAktif : {})}} onClick={() => setTab('bayii')}>
           Bayiilerim {bekleyenBayii.length > 0 && <span style={s.rozet}>{bekleyenBayii.length}</span>}
         </button>
       </div>
 
-      {/* ── Mühendis Talepleri ── */}
-      {tab === 'muhendis' && (
+      {/* ── Danışmanlarım ── */}
+      {tab === 'danismanlar' && (
         <>
-          {talepYukleniyor ? (
+          {danYukleniyor ? (
             <div style={s.yuklenme}>Yükleniyor...</div>
-          ) : talepHata ? (
-            <div style={s.hataMsg}>{talepHata}</div>
-          ) : talepler.length === 0 ? (
+          ) : danismanlar.length === 0 ? (
+            <div style={s.bos}>
+              <p style={s.bosBaslik}>Henüz danışmanınız yok</p>
+              <p style={s.bosAlt}>Slide menüden "Danışman Ekle" ile mühendis talep gönderebilirsiniz.</p>
+            </div>
+          ) : (
+            <div style={s.liste}>
+              {danismanlar.map(d => (
+                <div key={d.id} style={s.kart}>
+                  <div style={s.kartIcerik}>
+                    <div style={s.ikonYesil}>👨‍💼</div>
+                    <div style={s.bilgi}>
+                      <p style={s.baslikKuculuk}>{d.muhendis_ad}</p>
+                      <p style={s.alt}>🏢 {d.isletme?.ad}{d.isletme?.urun_ad ? ` · 🌱 ${d.isletme.urun_ad}` : ''}</p>
+                      {d.yanit_tarihi && (
+                        <p style={s.tarih}>✅ Onaylandı — {new Date(d.yanit_tarihi).toLocaleDateString('tr-TR')}</p>
+                      )}
+                    </div>
+                    <span style={s.onayliRozet}>Aktif</span>
+                  </div>
+                  <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end', marginTop:'10px' }}>
+                    <button style={s.kaldir} disabled={danIslemde === d.id} onClick={() => danismanKaldir(d.id)}>
+                      {danIslemde === d.id ? '…' : '✕ Kaldır'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Mühendisten Gelen Talepler ── */}
+      {tab === 'bekleyen' && (
+        <>
+          {bekleyenler.length === 0 ? (
             <div style={s.bos}>
               <p style={s.bosBaslik}>Bekleyen talep yok</p>
               <p style={s.bosAlt}>Bir mühendis danışman olarak eklemek istediğinde burada görünür.</p>
             </div>
           ) : (
             <div style={s.liste}>
-              {talepler.map(t => (
+              {bekleyenler.map(t => (
                 <div key={t.id} style={s.kart}>
                   <div style={s.kartIcerik}>
-                    <div style={s.ikon}>👨‍🌾</div>
+                    <div style={s.ikon}>👨‍💼</div>
                     <div style={s.bilgi}>
                       <p style={s.baslikKuculuk}>{t.muhendis_ad}</p>
                       <p style={s.alt}>{t.isletme?.ad} için danışmanlık talebinde bulunuyor</p>
-                      <p style={s.tarih}>
-                        {new Date(t.talep_tarihi).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </p>
+                      <p style={s.tarih}>{new Date(t.talep_tarihi).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                     </div>
                   </div>
                   <div style={{ ...s.butonlar, flexDirection: isMobile ? 'column' : 'row' }}>
@@ -140,10 +206,37 @@ export default function Talepler() {
         </>
       )}
 
+      {/* ── Mühendise Gönderilen Talepler ── */}
+      {tab === 'gonderilen' && (
+        <>
+          {gonderilenler.length === 0 ? (
+            <div style={s.bos}>
+              <p style={s.bosBaslik}>Gönderilen talep yok</p>
+              <p style={s.bosAlt}>Slide menüden "Danışman Ekle" ile mühendise talep gönderebilirsiniz.</p>
+            </div>
+          ) : (
+            <div style={s.liste}>
+              {gonderilenler.map(t => (
+                <div key={t.id} style={s.kart}>
+                  <div style={s.kartIcerik}>
+                    <div style={s.ikon}>👨‍💼</div>
+                    <div style={s.bilgi}>
+                      <p style={s.baslikKuculuk}>{t.muhendis_ad}</p>
+                      <p style={s.alt}>🏢 {t.isletme?.ad} için talep gönderildi</p>
+                      <p style={s.tarih}>{new Date(t.talep_tarihi).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                    <span style={s.bekleyenRozet}>Bekliyor</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
       {/* ── Bayiilerim ── */}
       {tab === 'bayii' && (
         <>
-          {/* Bağlı bayii listesi */}
           {bayiiYukleniyor ? (
             <div style={s.yuklenme}>Yükleniyor...</div>
           ) : (
@@ -160,6 +253,11 @@ export default function Talepler() {
                           {b.bayii_telefon && <p style={s.tarih}>{b.bayii_telefon}</p>}
                         </div>
                         <span style={s.onayliRozet}>Bağlı</span>
+                      </div>
+                      <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end', marginTop:'10px' }}>
+                        <button style={s.kaldir} disabled={bayiiIslemde === b.id} onClick={() => bayiiKaldir(b.id)}>
+                          {bayiiIslemde === b.id ? '…' : '✕ Kaldır'}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -193,11 +291,9 @@ export default function Talepler() {
                 </div>
               )}
 
-              <button style={s.ekleBtn} onClick={bayiiListesiAc}>+ Bayii Ekle</button>
             </>
           )}
 
-          {/* Bayii seçim paneli */}
           {bayiiPanelAcik && (
             <div style={s.overlay} onClick={() => setBayiiPanelAcik(false)}>
               <div style={{ ...s.panel, width: isMobile ? '94vw' : '480px' }} onClick={e => e.stopPropagation()}>
@@ -249,7 +345,7 @@ export default function Talepler() {
 }
 
 const s = {
-  kapsayici:   { padding: '2rem', maxWidth: '720px', margin: '0 auto' },
+  kapsayici:   { maxWidth: '720px', margin: '0 auto' },
   baslik:      { fontSize: '1.5rem', fontWeight: '500', marginBottom: '1rem', color: '#1a7a4a' },
   yuklenme:    { padding: '2rem', textAlign: 'center', color: '#888' },
   hataMsg:     { color: '#e53e3e', fontSize: '0.85rem', margin: '8px 0' },
@@ -285,4 +381,5 @@ const s = {
   panelSatir:  { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f5f5f5' },
   talepBtn:    { padding: '5px 14px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: '500' },
   ekliYazi:    { fontSize: '0.82rem', color: '#aaa' },
+  kaldir:      { padding: '5px 14px', background: '#fff0f0', color: '#e05353', border: '1px solid #fcc', borderRadius: '7px', cursor: 'pointer', fontSize: '0.82rem' },
 }

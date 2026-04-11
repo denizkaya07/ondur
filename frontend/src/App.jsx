@@ -14,6 +14,7 @@ const Danisanlar   = lazy(() => import('./pages/muhendis/Danisanlar'))
 const Receteler    = lazy(() => import('./pages/muhendis/Receteler'))
 const Takvim       = lazy(() => import('./pages/muhendis/Takvim'))
 const ReceteYaz    = lazy(() => import('./pages/muhendis/ReceteYaz'))
+const AnaSayfa     = lazy(() => import('./pages/ciftci/AnaSayfa'))
 const Recetelerim  = lazy(() => import('./pages/ciftci/Recetelerim'))
 const Isletmelerim = lazy(() => import('./pages/ciftci/Isletmelerim'))
 const Talepler     = lazy(() => import('./pages/ciftci/Talepler'))
@@ -63,7 +64,8 @@ export default function App() {
       <Route path="/muhendis/takvim"     element={<KorunanRota rol="muhendis"><Takvim /></KorunanRota>} />
 
       {/* Çiftçi */}
-      <Route path="/ciftci"             element={<KorunanRota rol="ciftci"><Recetelerim /></KorunanRota>} />
+      <Route path="/ciftci"             element={<KorunanRota rol="ciftci"><AnaSayfa /></KorunanRota>} />
+      <Route path="/ciftci/recetelerim" element={<KorunanRota rol="ciftci"><Recetelerim /></KorunanRota>} />
       <Route path="/ciftci/isletmeler"  element={<KorunanRota rol="ciftci"><Isletmelerim /></KorunanRota>} />
       <Route path="/ciftci/talepler"    element={<KorunanRota rol="ciftci"><Talepler /></KorunanRota>} />
 

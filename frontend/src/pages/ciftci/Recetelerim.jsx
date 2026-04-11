@@ -96,12 +96,32 @@ export default function Recetelerim() {
                     <p style={s.alt}>Yükleniyor...</p>
                   ) : detay ? (
                     <>
-                    <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'8px' }}>
+                    <div style={{ display:'flex', justifyContent:'flex-end', gap:'8px', marginBottom:'8px', flexWrap:'wrap' }}>
                       <button
                         style={s.pdfBtn}
                         onClick={e => { e.stopPropagation(); recetePdfIndir(detay) }}
                       >
-                        PDF İndir
+                        📄 PDF İndir
+                      </button>
+                      <button
+                        style={{ ...s.pdfBtn, background:'#25d366', color:'#fff' }}
+                        onClick={e => {
+                          e.stopPropagation()
+                          const kalemler = (detay.adimlar||[]).flatMap(a => (a.kalemler||[]).map(k =>
+                            `  - ${k.ilac_ad || k.gubre_ad || ''}${k.doz_dekar ? ` ${k.doz_dekar} ${k.birim}/da` : ''}`
+                          )).join('\n')
+                          const metin = [
+                            `🌱 Reçete Bilgisi`,
+                            `İşletme: ${detay.isletme_ad || ''}`,
+                            `Tarih: ${detay.tarih || ''}`,
+                            `Tanı: ${detay.tani || ''}`,
+                            kalemler ? `Ürünler:\n${kalemler}` : '',
+                            detay.ciftciye_not ? `Not: ${detay.ciftciye_not}` : '',
+                          ].filter(Boolean).join('\n')
+                          window.open(`https://wa.me/?text=${encodeURIComponent(metin)}`, '_blank')
+                        }}
+                      >
+                        📲 WhatsApp
                       </button>
                     </div>
                     <>

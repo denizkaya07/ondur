@@ -57,10 +57,6 @@ export default function Analiz() {
           <p style={s.ozetSayi}>{ilaclar.reduce((a, x) => a + x.recete_sayisi, 0)}</p>
           <p style={s.ozetEtiket}>Reçete</p>
         </div>
-        <div style={s.ozetKart}>
-          <p style={s.ozetSayi}>{toplamRecete}</p>
-          <p style={s.ozetEtiket}>Benzersiz Reçete</p>
-        </div>
       </div>
 
       <div style={s.tabBar}>

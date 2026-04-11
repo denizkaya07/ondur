@@ -60,17 +60,24 @@ export default function Isletmelerim() {
   const [recAcik, setRecAcik]         = useState(null)
   const [recDetay, setRecDetay]       = useState({}) // id -> detay
   const [recSecili, setRecSecili]     = useState(null)
-  const [gpsAcik, setGpsAcik]         = useState(null)
-  const [gpsForm, setGpsForm]         = useState({ enlem: '', boylam: '' })
-  const [gpsKaydediyor, setGpsKaydediyor] = useState(false)
+
+
   const [formAcik, setFormAcik]     = useState(false)
   const [kaydediyor, setKaydediyor] = useState(false)
   const [hata, setHata]             = useState('')
 
   const [form, setForm] = useState({
     ad: '', tur: 'sera', sera_tip: '', urun: '', cesit: '',
-    alan_dekar: '', ekim_tarihi: '', enlem: '', boylam: '',
+    alan_dekar: '', ekim_tarihi: '', ortualti_no: '',
+    il: '', ilce: '', mahalle: '', ada_no: '', parsel_no: '',
+    enlem: '', boylam: '',
   })
+
+  useEffect(() => {
+    const handler = () => { setFormAcik(true); setHata('') }
+    window.addEventListener('isletme-ekle-ac', handler)
+    return () => window.removeEventListener('isletme-ekle-ac', handler)
+  }, [])
 
   useEffect(() => {
     if (authYukleniyor) return
@@ -119,13 +126,19 @@ export default function Isletmelerim() {
         ...(form.urun ? { urun: form.urun } : {}),
         ...(form.cesit ? { cesit: form.cesit } : {}),
         ...(form.ekim_tarihi ? { ekim_tarihi: form.ekim_tarihi } : {}),
+        ...(form.ortualti_no ? { ortualti_no: form.ortualti_no } : {}),
+        ...(form.il ? { il: form.il } : {}),
+        ...(form.ilce ? { ilce: form.ilce } : {}),
+        ...(form.mahalle ? { mahalle: form.mahalle } : {}),
+        ...(form.ada_no ? { ada_no: form.ada_no } : {}),
+        ...(form.parsel_no ? { parsel_no: form.parsel_no } : {}),
         ...(form.enlem ? { enlem: form.enlem } : {}),
         ...(form.boylam ? { boylam: form.boylam } : {}),
       }
       const res = await api.post('/ciftci/isletme/ekle/', payload)
       setIsletmeler(prev => [res.data, ...prev])
       setFormAcik(false)
-      setForm({ ad: '', tur: 'sera', sera_tip: '', urun: '', cesit: '', alan_dekar: '', ekim_tarihi: '', enlem: '', boylam: '' })
+      setForm({ ad: '', tur: 'sera', sera_tip: '', urun: '', cesit: '', alan_dekar: '', ekim_tarihi: '', ortualti_no: '', il: '', ilce: '', mahalle: '', ada_no: '', parsel_no: '', enlem: '', boylam: '' })
       setCesitler([])
     } catch (err) {
       setHata(err.response?.data ? JSON.stringify(err.response.data) : 'Kayıt başarısız.')
@@ -142,9 +155,6 @@ export default function Isletmelerim() {
     <div style={{ ...s.kapsayici, padding: isMobile ? '1rem' : '2rem' }}>
       <div style={s.ustBar}>
         <h2 style={s.baslik}>İşletmelerim</h2>
-        <button style={s.ekleBtn} onClick={() => { setFormAcik(true); setHata('') }}>
-          + İşletme Ekle
-        </button>
       </div>
 
       {formAcik && (
@@ -200,13 +210,37 @@ export default function Isletmelerim() {
                 <label style={s.etiket}>Ekim Tarihi</label>
                 <input style={s.girdi} name="ekim_tarihi" type="date" value={form.ekim_tarihi} onChange={degis} />
               </div>
+              <div style={s.alan}>
+                <label style={s.etiket}>Örtüaltı Sicil No</label>
+                <input style={s.girdi} name="ortualti_no" value={form.ortualti_no} onChange={degis} placeholder="07-17-XXXX-0001" />
+              </div>
+              <div style={s.alan}>
+                <label style={s.etiket}>İl</label>
+                <input style={s.girdi} name="il" value={form.il} onChange={degis} placeholder="Antalya" />
+              </div>
+              <div style={s.alan}>
+                <label style={s.etiket}>İlçe</label>
+                <input style={s.girdi} name="ilce" value={form.ilce} onChange={degis} placeholder="Kumluca" />
+              </div>
               <div style={{...s.alan, gridColumn: isMobile ? 'span 1' : 'span 2'}}>
-                <label style={s.etiket}>GPS Konumu</label>
-                <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
-                  <input style={{...s.girdi, flex:1}} name="enlem" type="number" step="0.000001" placeholder="Enlem (36.123456)" value={form.enlem} onChange={degis} />
-                  <input style={{...s.girdi, flex:1}} name="boylam" type="number" step="0.000001" placeholder="Boylam (30.123456)" value={form.boylam} onChange={degis} />
+                <label style={s.etiket}>Mahalle / Köy</label>
+                <input style={s.girdi} name="mahalle" value={form.mahalle} onChange={degis} placeholder="Mavikent Mahallesi" />
+              </div>
+              <div style={s.alan}>
+                <label style={s.etiket}>Ada No</label>
+                <input style={s.girdi} name="ada_no" value={form.ada_no} onChange={degis} placeholder="128" />
+              </div>
+              <div style={s.alan}>
+                <label style={s.etiket}>Parsel No</label>
+                <input style={s.girdi} name="parsel_no" value={form.parsel_no} onChange={degis} placeholder="4" />
+              </div>
+              <div style={{...s.alan, gridColumn: isMobile ? 'span 1' : 'span 2'}}>
+                <label style={s.etiket}>📍 GPS Konumu</label>
+                <div style={{ display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap' }}>
+                  <input style={{...s.girdi, flex:1, minWidth:'120px'}} name="enlem" type="number" step="0.000001" placeholder="Enlem (36.123456)" value={form.enlem} onChange={degis} />
+                  <input style={{...s.girdi, flex:1, minWidth:'120px'}} name="boylam" type="number" step="0.000001" placeholder="Boylam (30.123456)" value={form.boylam} onChange={degis} />
                   <button type="button" style={s.konumBtn} onClick={() => {
-                    if (!navigator.geolocation) return
+                    if (!navigator.geolocation) return alert('Tarayıcı konum desteklemiyor.')
                     navigator.geolocation.getCurrentPosition(
                       pos => setForm(f => ({ ...f, enlem: pos.coords.latitude.toFixed(6), boylam: pos.coords.longitude.toFixed(6) })),
                       () => alert('Konum alınamadı.')
@@ -258,6 +292,24 @@ export default function Isletmelerim() {
 
               {secili?.id === i.id && (
                 <div style={s.detay}>
+                  {i.ortualti_no && (
+                    <div style={s.detayRow}>
+                      <span style={s.detiket}>🏷️ Örtüaltı Tescil No</span>
+                      <span>{i.ortualti_no}</span>
+                    </div>
+                  )}
+                  {(i.mahalle || i.ilce || i.il) && (
+                    <div style={s.detayRow}>
+                      <span style={s.detiket}>📍 Adres</span>
+                      <span>{[i.mahalle, i.ilce, i.il].filter(Boolean).join(', ')}</span>
+                    </div>
+                  )}
+                  {(i.ada_no || i.parsel_no) && (
+                    <div style={s.detayRow}>
+                      <span style={s.detiket}>🗺️ Ada / Parsel</span>
+                      <span>{i.ada_no ? `Ada: ${i.ada_no}` : ''}{i.ada_no && i.parsel_no ? ' — ' : ''}{i.parsel_no ? `Parsel: ${i.parsel_no}` : ''}</span>
+                    </div>
+                  )}
                   {i.sera_tip && (
                     <div style={s.detayRow}>
                       <span style={s.detiket}>Sera Tipi</span>
@@ -275,35 +327,22 @@ export default function Isletmelerim() {
                     <span>{new Date(i.olusturma).toLocaleDateString('tr-TR')}</span>
                   </div>
 
-                  {/* GPS detay */}
-                  {i.enlem && i.boylam && (
-                    <div style={s.detayRow}>
-                      <span style={s.detiket}>📍 GPS</span>
-                      <a href={`https://maps.google.com/?q=${i.enlem},${i.boylam}`} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={s.gpsLink}>
-                        {i.enlem}, {i.boylam} — Haritada Gör
-                      </a>
-                    </div>
-                  )}
-
                   {/* Aksiyon butonları */}
                   <div style={s.aksiyonlar}>
                     <button style={{...s.aksiyonBtn, ...(recAcik === i.id ? s.aksiyonAktif : {})}}
-                      onClick={e => { e.stopPropagation(); setRecAcik(recAcik === i.id ? null : i.id); setFotografAcik(null); setToprakAcik(null); setGpsAcik(null) }}>
+                      onClick={e => { e.stopPropagation(); setRecAcik(recAcik === i.id ? null : i.id); setFotografAcik(null); setToprakAcik(null) }}>
                       📋 Reçeteler
                     </button>
                     <button style={{...s.aksiyonBtn, ...(fotografAcik === i.id ? s.aksiyonAktif : {})}}
-                      onClick={e => { e.stopPropagation(); setFotografAcik(fotografAcik === i.id ? null : i.id); setRecAcik(null); setToprakAcik(null); setGpsAcik(null) }}>
+                      onClick={e => { e.stopPropagation(); setFotografAcik(fotografAcik === i.id ? null : i.id); setRecAcik(null); setToprakAcik(null) }}>
                       📷 Fotoğraflar
                     </button>
                     <button style={{...s.aksiyonBtn, ...(toprakAcik === i.id ? s.aksiyonAktif : {})}}
-                      onClick={e => { e.stopPropagation(); setToprakAcik(toprakAcik === i.id ? null : i.id); setRecAcik(null); setFotografAcik(null); setGpsAcik(null); setToprakEkle(null) }}>
+                      onClick={e => { e.stopPropagation(); setToprakAcik(toprakAcik === i.id ? null : i.id); setRecAcik(null); setFotografAcik(null); setToprakEkle(null) }}>
                       🧪 Toprak
                     </button>
-                    <button style={{...s.aksiyonBtn, ...(gpsAcik === i.id ? s.aksiyonAktif : {}), ...((!i.enlem || !i.boylam) ? { borderColor:'#e07000', color:'#e07000' } : {})}}
-                      onClick={e => { e.stopPropagation(); setGpsAcik(gpsAcik === i.id ? null : i.id); setRecAcik(null); setFotografAcik(null); setToprakAcik(null); setGpsForm({ enlem: i.enlem || '', boylam: i.boylam || '' }) }}>
-                      📍 GPS {(!i.enlem || !i.boylam) ? '!' : ''}
-                    </button>
                   </div>
+
 
                   {/* Reçeteler paneli */}
                   {recAcik === i.id && (
@@ -368,53 +407,6 @@ export default function Isletmelerim() {
                         canUpload={true}
                         onKapat={() => setFotografAcik(null)}
                       />
-                    </div>
-                  )}
-
-                  {/* GPS paneli */}
-                  {gpsAcik === i.id && (
-                    <div style={s.toprakForm} onClick={e => e.stopPropagation()}>
-                      <p style={{ margin:'0 0 10px', fontWeight:'600', fontSize:'0.85rem', color:'#1a7a4a' }}>📍 GPS Konumu</p>
-                      <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', alignItems:'flex-end' }}>
-                        <div>
-                          <label style={{ fontSize:'0.72rem', color:'#666', display:'block', marginBottom:'2px' }}>Enlem</label>
-                          <input type="number" step="0.000001" placeholder="36.123456"
-                            value={gpsForm.enlem}
-                            onChange={e => setGpsForm(f => ({ ...f, enlem: e.target.value }))}
-                            style={{ width:'140px', padding:'6px 8px', border:'1px solid #d0eada', borderRadius:'6px', fontSize:'0.88rem' }} />
-                        </div>
-                        <div>
-                          <label style={{ fontSize:'0.72rem', color:'#666', display:'block', marginBottom:'2px' }}>Boylam</label>
-                          <input type="number" step="0.000001" placeholder="30.123456"
-                            value={gpsForm.boylam}
-                            onChange={e => setGpsForm(f => ({ ...f, boylam: e.target.value }))}
-                            style={{ width:'140px', padding:'6px 8px', border:'1px solid #d0eada', borderRadius:'6px', fontSize:'0.88rem' }} />
-                        </div>
-                        <button style={{ padding:'6px 12px', background:'#e8f5ee', color:'#1a7a4a', border:'1px solid #c8e6d4', borderRadius:'6px', cursor:'pointer', fontSize:'0.82rem' }}
-                          onClick={() => {
-                            if (!navigator.geolocation) return
-                            navigator.geolocation.getCurrentPosition(
-                              pos => setGpsForm({ enlem: pos.coords.latitude.toFixed(6), boylam: pos.coords.longitude.toFixed(6) }),
-                              () => alert('Konum alınamadı.')
-                            )
-                          }}>
-                          📍 Konumumu Al
-                        </button>
-                        <button style={s.toprakKaydetBtn}
-                          disabled={gpsKaydediyor || !gpsForm.enlem || !gpsForm.boylam}
-                          onClick={async e => {
-                            e.stopPropagation()
-                            setGpsKaydediyor(true)
-                            try {
-                              const res = await api.patch(`/ciftci/isletme/${i.id}/guncelle/`, { enlem: gpsForm.enlem, boylam: gpsForm.boylam })
-                              setIsletmeler(prev => prev.map(x => x.id === i.id ? { ...x, enlem: res.data.enlem, boylam: res.data.boylam } : x))
-                              setGpsAcik(null)
-                            } catch { alert('Kaydedilemedi.') }
-                            finally { setGpsKaydediyor(false) }
-                          }}>
-                          {gpsKaydediyor ? 'Kaydediliyor…' : 'Kaydet'}
-                        </button>
-                      </div>
                     </div>
                   )}
 

@@ -52,9 +52,8 @@ export default function Urunlerim() {
     api.get('/katalog/bayii/urunlerim/')
       .then(res => setUrunler(res.data))
       .catch(err => {
-        if (err.response?.status === 403) {
-          setHataGlobal('Bu sayfaya erişim için bayii profiliniz gerekli.')
-        }
+        console.error('Urunlerim hata:', err.response?.status, err.response?.data)
+        setHataGlobal(`Ürünler yüklenemedi. (${err.response?.status || 'bağlantı hatası'})`)
       })
       .finally(() => setYukleniyor(false))
   }
@@ -104,7 +103,7 @@ export default function Urunlerim() {
       <div style={s.ustBar}>
         <h2 style={s.baslik}>Ürünlerim</h2>
         <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
-          <button style={s.excelBtn} onClick={excelSablon}>Şablon İndir</button>
+
           <button style={s.excelBtn} disabled={excelYukleniyor} onClick={() => dosyaRef.current?.click()}>
             {excelYukleniyor ? 'Yükleniyor…' : 'Excel Yükle'}
           </button>

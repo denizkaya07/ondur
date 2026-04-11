@@ -93,7 +93,14 @@ class CiftciMuhendiseTalepView(APIView):
             defaults={'durum': MuhendisIsletme.Durum.BEKLIYOR, 'baslatan': 'ciftci'}
         )
         if not created:
-            return Response({'hata': 'Bu mühendis ile zaten bir ilişki var.'}, status=status.HTTP_400_BAD_REQUEST)
+            if iliski.durum in (MuhendisIsletme.Durum.IPTAL, MuhendisIsletme.Durum.REDDEDILDI):
+                # İptal/reddedilmiş ilişkiye yeniden talep gönderilebilir
+                iliski.durum = MuhendisIsletme.Durum.BEKLIYOR
+                iliski.baslatan = 'ciftci'
+                iliski.yanit_tarihi = None
+                iliski.save()
+            else:
+                return Response({'hata': 'Bu mühendis ile zaten aktif bir ilişki var.'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(MuhendisIsletmeSerializer(iliski).data, status=status.HTTP_201_CREATED)
 
 
@@ -178,9 +185,11 @@ class BekleyenTaleplerView(generics.ListAPIView):
     serializer_class   = MuhendisIsletmeSerializer
 
     def get_queryset(self):
+        # Sadece mühendisten gelen talepler (çiftçinin kabul/red etmesi gereken)
         return MuhendisIsletme.objects.filter(
             isletme__ciftci__kullanici=self.request.user,
-            durum=MuhendisIsletme.Durum.BEKLIYOR
+            durum=MuhendisIsletme.Durum.BEKLIYOR,
+            baslatan='muhendis',
         ).select_related('muhendis', 'isletme__urun')
 
 
@@ -205,6 +214,68 @@ class TalepYanitlaView(APIView):
         return Response(MuhendisIsletmeSerializer(talep).data)
 
 
+class CiftciGonderilenTaleplerView(generics.ListAPIView):
+    """Çiftçinin mühendise gönderdiği ve henüz cevaplanmayan talepler."""
+    permission_classes = [IsCiftci]
+    serializer_class   = MuhendisIsletmeSerializer
+
+    def get_queryset(self):
+        return MuhendisIsletme.objects.filter(
+            isletme__ciftci__kullanici=self.request.user,
+            durum=MuhendisIsletme.Durum.BEKLIYOR,
+            baslatan='ciftci',
+        ).select_related('muhendis', 'isletme__urun')
+
+
+class CiftciDanismanlarView(generics.ListAPIView):
+    """Çiftçinin onaylı danışman mühendisleri."""
+    permission_classes = [IsCiftci]
+    serializer_class   = MuhendisIsletmeSerializer
+
+    def get_queryset(self):
+        return MuhendisIsletme.objects.filter(
+            isletme__ciftci__kullanici=self.request.user,
+            durum=MuhendisIsletme.Durum.ONAYLANDI
+        ).select_related('muhendis', 'isletme__urun')
+
+
+class CiftciDanismanGuncelleView(APIView):
+    """Çiftçi danışmanlık ilişkisini aktif/pasif yapar veya kaldırır."""
+    permission_classes = [IsCiftci]
+
+    def patch(self, request, pk):
+        iliski = get_object_or_404(
+            MuhendisIsletme, pk=pk,
+            isletme__ciftci__kullanici=request.user,
+            durum=MuhendisIsletme.Durum.ONAYLANDI
+        )
+        aksiyon = request.data.get('aksiyon')  # 'iptal'
+        if aksiyon == 'iptal':
+            iliski.durum = MuhendisIsletme.Durum.IPTAL
+            iliski.save()
+            return Response({'durum': 'iptal'})
+        return Response({'hata': 'Geçersiz aksiyon.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MuhendisListeleView(generics.ListAPIView):
+    """Çiftçinin danışman talebi gönderebileceği mühendis listesi."""
+    permission_classes = [IsCiftci]
+
+    def get(self, request):
+        from accounts.models import Kullanici
+        muhendisl = Kullanici.objects.filter(rol='muhendis', is_active=True).values(
+            'id', 'first_name', 'last_name', 'username'
+        )
+        data = [
+            {
+                'id': m['id'],
+                'ad': f"{m['first_name']} {m['last_name']}".strip() or m['username'],
+            }
+            for m in muhendisl
+        ]
+        return Response(data)
+
+
 # ── ÇİFTÇİ – BAYİİ ──
 
 class CiftciBayiiListView(generics.ListAPIView):
@@ -227,9 +298,36 @@ class CiftciBayiiTalepView(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = self.request.user
         if user.rol == 'ciftci':
-            serializer.save(ciftci=user.ciftci, bayii=Bayii.objects.get(pk=self.request.data['bayii']), baslatan=user)
+            serializer.save(ciftci=user.ciftci_profili, bayii=Bayii.objects.get(pk=self.request.data['bayii']), baslatan=user)
         elif user.rol == 'bayii':
-            serializer.save(bayii=user.bayii, ciftci=Ciftci.objects.get(pk=self.request.data['ciftci']), baslatan=user)
+            serializer.save(bayii=user.bayii_profili, ciftci=Ciftci.objects.get(pk=self.request.data['ciftci']), baslatan=user)
+
+
+class BayiiBekleyenTaleplerView(generics.ListAPIView):
+    """Bayiiye gelen ve henüz cevaplanmamış çiftçi talepleri."""
+    serializer_class   = CiftciBayiiSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from ondur.permissions import IsBayii
+        if self.request.user.rol != 'bayii':
+            return CiftciBayii.objects.none()
+        return CiftciBayii.objects.filter(
+            bayii__kullanici=self.request.user,
+            durum='bekliyor',
+            aktif=True,
+        ).select_related('ciftci')
+
+
+class CiftciBayiiKaldirView(APIView):
+    """Çiftçi bayii ilişkisini kaldırır (aktif=False)."""
+    permission_classes = [IsCiftci]
+
+    def delete(self, request, pk):
+        iliski = get_object_or_404(CiftciBayii, pk=pk, ciftci__kullanici=request.user)
+        iliski.aktif = False
+        iliski.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CiftciBayiiYanitView(generics.UpdateAPIView):

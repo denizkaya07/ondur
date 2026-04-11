@@ -150,6 +150,11 @@ class Isletme(models.Model):
                   )
     alan_dekar    = models.DecimalField(max_digits=8, decimal_places=2)
     ortualti_no   = models.CharField(max_length=50, blank=True, verbose_name='Örtüaltı Tescil No')
+    il            = models.CharField(max_length=100, blank=True, verbose_name='İl')
+    ilce          = models.CharField(max_length=100, blank=True, verbose_name='İlçe')
+    mahalle       = models.CharField(max_length=200, blank=True, verbose_name='Mahalle / Köy')
+    ada_no        = models.CharField(max_length=20, blank=True, verbose_name='Ada No')
+    parsel_no     = models.CharField(max_length=20, blank=True, verbose_name='Parsel No')
     ekim_tarihi   = models.DateField(null=True, blank=True)
     enlem       = models.DecimalField(
                       max_digits=9,

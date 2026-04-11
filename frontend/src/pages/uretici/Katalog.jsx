@@ -344,9 +344,7 @@ export default function Katalog() {
               {[...ilaclar, ...gubreler].filter(x => x.onaylandi).length} onaylı
             </span>
           </div>
-          <button style={s.excelBtn} onClick={() => excelSikayet(tab)}>
-            Şablon İndir
-          </button>
+
           <button style={s.excelBtn} disabled={excelYukleniyor} onClick={() => dosyaRef.current?.click()}>
             {excelYukleniyor ? 'Yükleniyor…' : 'Excel Yükle'}
           </button>

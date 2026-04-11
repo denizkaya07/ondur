@@ -24,6 +24,7 @@ class IsletmeSerializer(serializers.ModelSerializer):
             'id', 'ad', 'tur', 'sera_tip',
             'urun', 'urun_ad', 'cesit', 'cesit_ad',
             'alan_dekar', 'ortualti_no', 'ekim_tarihi',
+            'il', 'ilce', 'mahalle', 'ada_no', 'parsel_no',
             'enlem', 'boylam', 'aktif', 'olusturma'
         ]
 
@@ -126,4 +127,4 @@ class CiftciBayiiSerializer(serializers.ModelSerializer):
         fields = ['id', 'ciftci', 'ciftci_ad', 'ciftci_soyad',
                   'bayii', 'bayii_adi', 'bayii_il', 'bayii_ilce', 'bayii_telefon',
                   'baslatan', 'durum', 'talep_tarihi', 'yanit_tarihi', 'aktif']
-        read_only_fields = ['baslatan', 'durum', 'talep_tarihi', 'yanit_tarihi']
+        read_only_fields = ['ciftci', 'baslatan', 'durum', 'talep_tarihi', 'yanit_tarihi']

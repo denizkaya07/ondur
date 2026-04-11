@@ -18,15 +18,10 @@ export function recetePdfIndir(detay) {
   const el = document.createElement('div')
   el.style.cssText = 'width:794px;background:#fff;padding:32px;font-family:Arial,sans-serif;color:#222;'
   el.innerHTML = `
-<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:3px solid #1a7a4a;margin-bottom:18px;">
-  <div>
-    <div style="font-size:1.5rem;font-weight:700;color:#1a7a4a;letter-spacing:-0.5px;">ondur</div>
-    <div style="font-size:0.75rem;color:#888;margin-top:2px;">onduran.com.tr</div>
-  </div>
-  <div style="text-align:right;font-size:0.8rem;color:#888;">
-    <div>Tarım Danışmanlık Sistemi</div>
-    <div>Reçete #${detay.id}</div>
-  </div>
+<div style="text-align:center;padding-bottom:12px;border-bottom:3px solid #1a7a4a;margin-bottom:18px;">
+  <div style="font-size:1.4rem;font-weight:700;color:#1a7a4a;letter-spacing:-0.5px;">www.onduran.com.tr</div>
+  <div style="font-size:0.95rem;color:#555;margin-top:3px;font-weight:500;">Onduran Tarım</div>
+  <div style="font-size:0.75rem;color:#aaa;margin-top:2px;">Reçete #${detay.id}</div>
 </div>
 
 <h2 style="color:#1a7a4a;font-size:1.2rem;margin:0 0 10px">${detay.tani || 'Reçete'}</h2>
@@ -42,9 +37,9 @@ ${sulamaHtml}
 
 ${detay.ciftciye_not ? `<div style="margin-top:16px;padding:10px 14px;background:#fff8e1;border-radius:6px;font-size:0.88rem"><b>Not:</b> ${detay.ciftciye_not}</div>` : ''}
 
-<div style="margin-top:40px;padding-top:10px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:0.72rem;color:#aaa;">
-  <span>onduran.com.tr — Tarım Danışmanlık Sistemi</span>
-  <span>${new Date().toLocaleDateString('tr-TR')}</span>
+<div style="margin-top:40px;padding-top:10px;border-top:1px solid #eee;text-align:center;font-size:0.72rem;color:#aaa;">
+  <div style="font-weight:600;color:#1a7a4a;">www.onduran.com.tr</div>
+  <div>Onduran Tarım — ${new Date().toLocaleDateString('tr-TR')}</div>
 </div>`
 
   const overlay = document.createElement('div')
