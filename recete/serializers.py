@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Recete, UygulamaAdimi, UygulamaAdimKalemi,
-    ReceteVersiyon, ReceteYorum, ReceteFotograf
+    ReceteVersiyon, ReceteYorum, ReceteFotograf, ReceteSablon
 )
 from ciftci.serializers import IsletmeSerializer
 from katalog.serializers import IlacKisaSerializer, GubreKisaSerializer
@@ -117,6 +117,19 @@ class ReceteKisaSerializer(serializers.ModelSerializer):
             'id', 'isletme', 'isletme_ad', 'ciftci_ad',
             'muhendis_ad', 'tani', 'tarih', 'durum', 'olusturma'
         ]
+
+
+class ReceteSablonSerializer(serializers.ModelSerializer):
+    urun_ad = serializers.CharField(source='urun.ad', read_only=True)
+
+    class Meta:
+        model  = ReceteSablon
+        fields = [
+            'id', 'ad', 'tani', 'ciftciye_not',
+            'donemler', 'kulturel', 'biyolojik', 'takip',
+            'urun', 'urun_ad', 'olusturma', 'guncelleme',
+        ]
+        read_only_fields = ['olusturma', 'guncelleme']
 
 
 class UygulamaAdimKalemiEkleSerializer(serializers.ModelSerializer):

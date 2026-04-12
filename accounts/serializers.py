@@ -95,7 +95,10 @@ class KullaniciSerializer(serializers.ModelSerializer):
 
 
 class TelefonTokenSerializer(serializers.Serializer):
-    telefon  = serializers.CharField()
+    telefon  = serializers.RegexField(
+        regex=r'^(0|\+90)?\d{10}$',
+        error_messages={'invalid': 'Geçersiz telefon numarası formatı.'}
+    )
     password = serializers.CharField()
 
     def validate(self, attrs):

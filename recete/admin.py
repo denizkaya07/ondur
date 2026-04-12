@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Recete, UygulamaAdimi, UygulamaAdimKalemi,
-    ReceteVersiyon, ReceteYorum, ReceteFotograf
+    ReceteVersiyon, ReceteYorum, ReceteFotograf, ReceteSablon
 )
 
 
@@ -58,4 +58,8 @@ class ReceteFotografAdmin(admin.ModelAdmin):
     list_filter  = ['tip']
 
 
-    
+@admin.register(ReceteSablon)
+class ReceteSablonAdmin(admin.ModelAdmin):
+    list_display  = ['ad', 'muhendis', 'urun', 'guncelleme']
+    search_fields = ['ad', 'muhendis__username', 'tani']
+    list_filter   = ['urun']

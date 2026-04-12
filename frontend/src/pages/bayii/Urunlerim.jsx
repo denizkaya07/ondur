@@ -34,6 +34,43 @@ async function excelYukle(dosya, katalog, api, onBitti, onHata) {
   else onBitti(basari)
 }
 
+function StokDuzenle({ urun, onKayit }) {
+  const [stok, setStok]           = useState(urun.stok ?? '')
+  const [esik, setEsik]           = useState(urun.stok_esik ?? '')
+  const [kaydediyor, setKaydediyor] = useState(false)
+
+  const kaydet = async () => {
+    setKaydediyor(true)
+    try {
+      await api.patch(`/katalog/bayii/stok/${urun.id}/`, {
+        stok: stok === '' ? null : stok,
+        stok_esik: esik === '' ? null : esik,
+      })
+      onKayit()
+    } catch {}
+    setKaydediyor(false)
+  }
+
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+      <input
+        type="number" min="0" step="0.01" placeholder="Stok"
+        value={stok} onChange={e => setStok(e.target.value)}
+        style={{ width:80, padding:'4px 6px', border:'1px solid #ddd', borderRadius:6, fontSize:'0.82rem' }}
+      />
+      <input
+        type="number" min="0" step="0.01" placeholder="Uyarı eşiği"
+        value={esik} onChange={e => setEsik(e.target.value)}
+        style={{ width:100, padding:'4px 6px', border:'1px solid #ddd', borderRadius:6, fontSize:'0.82rem' }}
+      />
+      <button onClick={kaydet} disabled={kaydediyor}
+        style={{ padding:'4px 10px', background:'#1a7a4a', color:'#fff', border:'none', borderRadius:6, cursor:'pointer', fontSize:'0.8rem' }}>
+        {kaydediyor ? '…' : 'Kaydet'}
+      </button>
+    </div>
+  )
+}
+
 export default function Urunlerim() {
   const [urunler, setUrunler]     = useState([])
   const [katalog, setKatalog]     = useState({ ilaclar: [], gubreler: [] })
@@ -45,6 +82,7 @@ export default function Urunlerim() {
   const [hataGlobal, setHataGlobal] = useState('')
   const [excelMesaj, setExcelMesaj]       = useState('')
   const [excelYukleniyor, setExcelYukleniyor] = useState(false)
+  const [stokAcik, setStokAcik]   = useState(null) // düzenlenen urun.id
   const dosyaRef = useRef()
 
   const yukle = () => {
@@ -52,7 +90,6 @@ export default function Urunlerim() {
     api.get('/katalog/bayii/urunlerim/')
       .then(res => setUrunler(res.data))
       .catch(err => {
-        console.error('Urunlerim hata:', err.response?.status, err.response?.data)
         setHataGlobal(`Ürünler yüklenemedi. (${err.response?.status || 'bağlantı hatası'})`)
       })
       .finally(() => setYukleniyor(false))
@@ -181,16 +218,42 @@ export default function Urunlerim() {
         </div>
       )}
 
+      {/* Kritik stok uyarısı */}
+      {urunler.some(u => u.stok_kritik) && (
+        <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:10, padding:'10px 14px', marginBottom:16, fontSize:'0.88rem', color:'#991b1b' }}>
+          ⚠️ <strong>{urunler.filter(u => u.stok_kritik).length} ürünün</strong> stoğu uyarı eşiğinin altında.
+        </div>
+      )}
+
       {urunler.length === 0 ? (
         <div style={s.bos}>Henüz ürün eklenmemiş.</div>
       ) : (
         <div style={s.liste}>
           {urunler.map(u => (
-            <div key={u.id} style={s.kart}>
-              <div style={s.tipBadge}>
-                {u.ilac_ad ? 'İlaç' : 'Gübre'}
+            <div key={u.id} style={{ ...s.kart, ...(u.stok_kritik ? { border:'1px solid #fca5a5', background:'#fff5f5' } : {}) }}>
+              <div style={s.tipBadge}>{u.ilac_ad ? 'İlaç' : 'Gübre'}</div>
+              <div style={{ flex:1 }}>
+                <p style={s.urunAd}>
+                  {u.ilac_ad || u.gubre_ad}
+                  {u.stok_kritik && <span style={{ marginLeft:8, fontSize:'0.75rem', color:'#dc2626', fontWeight:600 }}>⚠ Stok Kritik</span>}
+                </p>
+                {u.stok !== null && u.stok !== undefined && (
+                  <p style={{ margin:'2px 0 0', fontSize:'0.8rem', color: u.stok_kritik ? '#dc2626' : '#6b7280' }}>
+                    Stok: <strong>{u.stok}</strong>
+                    {u.stok_esik !== null && u.stok_esik !== undefined && ` / Eşik: ${u.stok_esik}`}
+                  </p>
+                )}
               </div>
-              <p style={s.urunAd}>{u.ilac_ad || u.gubre_ad}</p>
+              <button
+                onClick={() => setStokAcik(stokAcik === u.id ? null : u.id)}
+                style={{ padding:'4px 10px', background:'#f3f4f6', color:'#374151', border:'1px solid #e5e7eb', borderRadius:6, cursor:'pointer', fontSize:'0.78rem', whiteSpace:'nowrap' }}>
+                {stokAcik === u.id ? 'Kapat' : 'Stok Gir'}
+              </button>
+              {stokAcik === u.id && (
+                <div style={{ width:'100%', marginTop:8, paddingTop:8, borderTop:'1px solid #f0f0f0' }}>
+                  <StokDuzenle urun={u} onKayit={() => { setStokAcik(null); yukle() }} />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -208,7 +271,7 @@ const s = {
   yuklenme:  { padding: '2rem', textAlign: 'center', color: '#888' },
   bos:       { padding: '3rem', textAlign: 'center', color: '#aaa', background: '#f9f9f9', borderRadius: '10px' },
   liste:     { display: 'flex', flexDirection: 'column', gap: '8px' },
-  kart:      { background: '#fff', border: '1px solid #e8e8e8', borderRadius: '10px', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '12px' },
+  kart:      { background: '#fff', border: '1px solid #e8e8e8', borderRadius: '10px', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
   tipBadge:  { padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', background: '#f0f0f0', color: '#555', whiteSpace: 'nowrap' },
   urunAd:    { margin: 0, fontWeight: '500', fontSize: '0.95rem' },
   panel:     { background: '#fff', border: '1px solid #e0ede6', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' },

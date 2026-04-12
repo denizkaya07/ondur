@@ -296,3 +296,48 @@ class CiftciBayii(models.Model):
 
     def __str__(self):
         return f"{self.ciftci} — {self.bayii} ({self.durum})"
+
+
+class CiftciSorusu(models.Model):
+    class Durum(models.TextChoices):
+        BEKLIYOR  = 'bekliyor',  'Bekliyor'
+        YANITLANDI = 'yanitlandi', 'Yanıtlandı'
+
+    ciftci    = models.ForeignKey(Ciftci, on_delete=models.CASCADE, related_name='sorular')
+    isletme   = models.ForeignKey(Isletme, on_delete=models.SET_NULL, null=True, blank=True, related_name='sorular')
+    metin     = models.TextField(verbose_name='Soru')
+    fotograf  = models.ImageField(upload_to='ciftci_sorular/%Y/%m/', null=True, blank=True)
+    ai_teshis = models.TextField(blank=True, verbose_name='AI Teşhis')
+    durum     = models.CharField(max_length=20, choices=Durum.choices, default=Durum.BEKLIYOR)
+    yanit     = models.TextField(blank=True, verbose_name='Mühendis Yanıtı')
+    yanitleyen = models.ForeignKey(Kullanici, on_delete=models.SET_NULL, null=True, blank=True, related_name='yanitlenen_sorular')
+    yanit_tarihi = models.DateTimeField(null=True, blank=True)
+    olusturma = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = 'Çiftçi Sorusu'
+        verbose_name_plural = 'Çiftçi Soruları'
+        ordering            = ['-olusturma']
+
+    def __str__(self):
+        return f'{self.ciftci} — {self.metin[:40]}'
+
+
+class MuhendisDuyuru(models.Model):
+    """Mühendis, danıştığı çiftçilere filtreli toplu mesaj gönderir."""
+    muhendis   = models.ForeignKey(Kullanici, on_delete=models.CASCADE, related_name='duyurular')
+    baslik     = models.CharField(max_length=120)
+    metin      = models.TextField()
+    # Filtreler — boş = herkese
+    urun       = models.ForeignKey(Urun, null=True, blank=True, on_delete=models.SET_NULL, verbose_name='Ürün filtresi')
+    il_filtre  = models.CharField(max_length=60, blank=True, verbose_name='İl filtresi')
+    ilce_filtre = models.CharField(max_length=60, blank=True, verbose_name='İlçe filtresi')
+    olusturma  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = 'Mühendis Duyurusu'
+        verbose_name_plural = 'Mühendis Duyuruları'
+        ordering            = ['-olusturma']
+
+    def __str__(self):
+        return f'{self.muhendis} — {self.baslik}'

@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/katalog/', include('katalog.urls')),
     path('api/recete/', include('recete.urls')),
     path('api/ziyaret/', include('ziyaret.urls')),
+    path('api/ai/', include('ai.urls')),
 ]
 
 if settings.DEBUG:

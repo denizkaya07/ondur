@@ -16,15 +16,24 @@ apt-get install -y python3.12 python3.12-venv python3-pip \
     nodejs npm git
 
 echo "=== [2/8] PostgreSQL ==="
+# .env bu adımda henüz yok — şifreyi daha sonra okumak için önce .env oluşturulmalı
+# Aşağıdaki blok .env'den şifreyi okuyarak idempotent çalışır
+if [ ! -f "$APP_DIR/.env" ]; then
+  echo "HATA: $APP_DIR/.env dosyası bulunamadı. Önce .env dosyasını oluşturun:"
+  echo "  cp $APP_DIR/.env.example $APP_DIR/.env && nano $APP_DIR/.env"
+  exit 1
+fi
+DB_PASS=$(grep DB_PASSWORD $APP_DIR/.env | cut -d= -f2)
 sudo -u postgres psql <<SQL
 DO \$\$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ondur') THEN
-    CREATE USER ondur WITH PASSWORD '$(grep DB_PASSWORD /var/www/ondur/.env | cut -d= -f2)';
+    CREATE USER ondur WITH PASSWORD '$DB_PASS';
   END IF;
 END
 \$\$;
-CREATE DATABASE ondur OWNER ondur;
+SELECT 'CREATE DATABASE ondur OWNER ondur'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'ondur')\gexec
 SQL
 
 echo "=== [3/8] Uygulama dizini ==="
@@ -47,7 +56,7 @@ venv/bin/python manage.py createsuperuser --no-input || true
 echo "=== [6/8] Frontend build ==="
 cd $APP_DIR/frontend
 npm ci
-VITE_API_URL=https://$DOMAIN npm run build
+VITE_API_URL=https://$DOMAIN/api npm run build
 
 echo "=== [7/8] Nginx + SSL ==="
 cp $APP_DIR/deploy/nginx.conf /etc/nginx/sites-available/ondur

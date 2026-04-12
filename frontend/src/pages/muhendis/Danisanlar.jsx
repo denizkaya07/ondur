@@ -148,8 +148,7 @@ export default function Danisanlar() {
         setDanisanlar(data)
         if (offline) setHata('Çevrimdışı — önbellek gösteriliyor.')
       })
-      .catch(err => {
-        console.error(err)
+      .catch(() => {
         setHata('Danışanlar yüklenirken hata oluştu.')
       })
       .finally(() => setYukleniyor(false))

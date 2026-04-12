@@ -25,7 +25,7 @@ export default function Receteler() {
     const url = isletmeId ? `/recete/?isletme=${isletmeId}` : '/recete/'
     api.get(url)
       .then(res => setReceteler(res.data))
-      .catch(err => console.error(err))
+      .catch(() => {})
       .finally(() => setYukleniyor(false))
   }, [isletmeId])
 

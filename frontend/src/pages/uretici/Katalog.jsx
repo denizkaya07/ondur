@@ -305,7 +305,7 @@ export default function Katalog() {
     ]).then(([il, gu]) => {
       setIlaclar(il.data)
       setGubreler(gu.data)
-    }).catch(console.error)
+    }).catch(() => {})
       .finally(() => setYukleniyor(false))
   }
 

@@ -180,6 +180,37 @@ class ReceteYorum(models.Model):
         ordering            = ['olusturma']
 
 
+class ReceteSablon(models.Model):
+    muhendis     = models.ForeignKey(
+                       Kullanici,
+                       related_name='sablonlar',
+                       on_delete=models.CASCADE
+                   )
+    ad           = models.CharField(max_length=200)
+    tani         = models.CharField(max_length=300, blank=True)
+    ciftciye_not = models.TextField(blank=True)
+    donemler     = models.JSONField(default=list)
+    kulturel     = models.JSONField(default=list)
+    biyolojik    = models.JSONField(default=list)
+    takip        = models.JSONField(default=list)
+    urun         = models.ForeignKey(
+                       'ciftci.Urun',
+                       null=True, blank=True,
+                       on_delete=models.SET_NULL,
+                       verbose_name='Ürün (opsiyonel)'
+                   )
+    olusturma    = models.DateTimeField(auto_now_add=True)
+    guncelleme   = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.ad} ({self.muhendis})'
+
+    class Meta:
+        verbose_name        = 'Reçete Şablonu'
+        verbose_name_plural = 'Reçete Şablonları'
+        ordering            = ['-guncelleme']
+
+
 class ReceteFotograf(models.Model):
 
     class Tip(models.TextChoices):

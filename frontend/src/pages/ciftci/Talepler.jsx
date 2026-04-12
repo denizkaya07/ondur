@@ -1,19 +1,22 @@
 import { useEffect, useState, useContext } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import api from '../../services/api'
 import { AuthContext } from '../../context/AuthContext'
 import useBreakpoint from '../../hooks/useBreakpoint'
 
 export default function Talepler() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { kullanici, yukleniyor: authYukleniyor } = useContext(AuthContext)
   const { isMobile } = useBreakpoint()
-  const [tab, setTab] = useState('danismanlar')
+  const params = new URLSearchParams(location.search)
+  const [tab, setTab] = useState(params.get('tab') || 'danismanlar')
 
   // Danışmanlarım (onaylı)
   const [danismanlar, setDanismanlar]   = useState([])
   const [danYukleniyor, setDanYukleniyor] = useState(true)
   const [danIslemde, setDanIslemde]     = useState(null)
+  const [danHata, setDanHata]           = useState('')
 
   // Mühendisten gelen talepler (çiftçi kabul/red edecek)
   const [bekleyenler, setBekleyenler]   = useState([])
@@ -74,7 +77,7 @@ export default function Talepler() {
     try {
       await api.patch(`/ciftci/danismanlarim-ciftci/${id}/guncelle/`, { aksiyon: 'iptal' })
       setDanismanlar(p => p.filter(d => d.id !== id))
-    } catch { alert('İşlem başarısız.') }
+    } catch { setDanHata('İşlem başarısız.') }
     finally { setDanIslemde(null) }
   }
 
@@ -84,7 +87,7 @@ export default function Talepler() {
     try {
       await api.delete(`/ciftci/bayiilerim/${id}/kaldir/`)
       setBayiilerim(p => p.filter(b => b.id !== id))
-    } catch { alert('İşlem başarısız.') }
+    } catch { setBayiiHata('İşlem başarısız.') }
     finally { setBayiiIslemde(null) }
   }
 
@@ -128,6 +131,9 @@ export default function Talepler() {
         <button style={{...s.tabBtn, ...(tab === 'danismanlar' ? s.tabAktif : {})}} onClick={() => setTab('danismanlar')}>
           👨‍💼 Danışmanlarım
         </button>
+        <button style={{...s.tabBtn, ...(tab === 'bekleyen' ? s.tabAktif : {})}} onClick={() => setTab('bekleyen')}>
+          Gelen Talepler {bekleyenler.length > 0 && <span style={s.rozet}>{bekleyenler.length}</span>}
+        </button>
         <button style={{...s.tabBtn, ...(tab === 'gonderilen' ? s.tabAktif : {})}} onClick={() => setTab('gonderilen')}>
           Gönderilen {gonderilenler.length > 0 && <span style={s.rozet}>{gonderilenler.length}</span>}
         </button>
@@ -139,6 +145,7 @@ export default function Talepler() {
       {/* ── Danışmanlarım ── */}
       {tab === 'danismanlar' && (
         <>
+          {danHata && <p style={s.hataMsg}>{danHata}</p>}
           {danYukleniyor ? (
             <div style={s.yuklenme}>Yükleniyor...</div>
           ) : danismanlar.length === 0 ? (
@@ -340,6 +347,7 @@ export default function Talepler() {
           )}
         </>
       )}
+
     </div>
   )
 }
@@ -382,4 +390,6 @@ const s = {
   talepBtn:    { padding: '5px 14px', background: '#1a7a4a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: '500' },
   ekliYazi:    { fontSize: '0.82rem', color: '#aaa' },
   kaldir:      { padding: '5px 14px', background: '#fff0f0', color: '#e05353', border: '1px solid #fcc', borderRadius: '7px', cursor: 'pointer', fontSize: '0.82rem' },
+  etiket:      { display:'block', fontSize:'0.82rem', color:'#555', fontWeight:'500', marginBottom:4 },
+  girdi:       { width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:'0.9rem', boxSizing:'border-box' },
 }

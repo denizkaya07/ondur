@@ -24,7 +24,6 @@ export default function Giris() {
         default:          navigate('/');
       }
     } catch (err) {
-      console.error('GİRİŞ HATASI:', err)
       const mesaj = err.response?.data?.non_field_errors?.[0]
         || err.response?.data?.detail
         || err.message
@@ -71,6 +70,12 @@ export default function Giris() {
         <p style={styles.kayitLink}>
           Hesabın yok mu? <a href="/kayit">Kayıt Ol</a>
         </p>
+        <div style={styles.demo}>
+          <div style={styles.demoBaslik}>Demo Giriş — Şifre: 1234</div>
+          <div style={styles.demoSatir} onClick={() => { setTelefon('05001000001'); setSifre('1234') }}>👨‍💼 Mühendis: 05001000001</div>
+          <div style={styles.demoSatir} onClick={() => { setTelefon('05302000001'); setSifre('1234') }}>🏪 Bayii: 05302000001</div>
+          <div style={styles.demoSatir} onClick={() => { setTelefon('05323000001'); setSifre('1234') }}>👨‍🌾 Çiftçi: 05323000001</div>
+        </div>
       </div>
     </div>
   )
@@ -140,5 +145,24 @@ const styles = {
     marginTop: '1.5rem',
     fontSize: '0.9rem',
     color: '#666',
+  },
+  demo: {
+    marginTop: '1.5rem',
+    background: '#f8fdf9',
+    border: '1px solid #c8e6d4',
+    borderRadius: '8px',
+    padding: '10px 14px',
+    fontSize: '0.82rem',
+  },
+  demoBaslik: {
+    fontWeight: '600',
+    color: '#1a7a4a',
+    marginBottom: '6px',
+  },
+  demoSatir: {
+    padding: '4px 0',
+    color: '#374151',
+    cursor: 'pointer',
+    borderRadius: '4px',
   },
 }

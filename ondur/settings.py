@@ -4,11 +4,11 @@ from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-gecici-anahtar-degistir')
+SECRET_KEY = config('SECRET_KEY')  # .env'de zorunlu — varsayılan yok
 
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())  # .env'de zorunlu
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -20,11 +20,13 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'accounts',
     'ciftci',
     'katalog',
     'recete',
     'ziyaret',
+    'ai',
 ]
 
 MIDDLEWARE = [
@@ -86,12 +88,24 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',
+        'user': '1000/hour',
+        'kayit': '20/hour',
+        'giris': '100/hour',
+    },
 }
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'ACCESS_TOKEN_LIFETIME':  timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ACCESS_TOKEN_LIFETIME':  timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS':  True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 LANGUAGE_CODE = 'tr-tr'
@@ -106,9 +120,24 @@ STATICFILES_DIRS = []
 MEDIA_URL  = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-AUTH_PASSWORD_VALIDATORS = []
+# Dosya yükleme limitleri
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
+FILE_UPLOAD_PERMISSIONS     = 0o644
+
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+     'OPTIONS': {'min_length': 8}},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
+HF_TOKEN = config('HF_TOKEN', default='')
+GROQ_API_KEY = config('GROQ_API_KEY', default='')
 
 # CORS
 if DEBUG:
@@ -121,9 +150,42 @@ CSRF_TRUSTED_ORIGINS = [
     'https://www.onduran.com.tr',
 ]
 
-# Güvenlik (production)
+# Production güvenlik
 if not DEBUG:
-    SESSION_COOKIE_SECURE      = True
-    CSRF_COOKIE_SECURE         = True
-    SECURE_HSTS_SECONDS        = 0
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SESSION_COOKIE_SECURE           = True
+    CSRF_COOKIE_SECURE              = True
+    SECURE_SSL_REDIRECT             = True
+    SECURE_PROXY_SSL_HEADER         = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_HSTS_SECONDS             = 31536000  # 1 yıl
+    SECURE_HSTS_INCLUDE_SUBDOMAINS  = True
+    SECURE_HSTS_PRELOAD             = True
+    X_FRAME_OPTIONS                 = 'DENY'
+    SECURE_CONTENT_TYPE_NOSNIFF     = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}

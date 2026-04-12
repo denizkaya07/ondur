@@ -2,6 +2,46 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 
+function AiSonucModal({ sonuc, onKapat }) {
+  if (!sonuc) return null
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:10001, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
+      onClick={onKapat}>
+      <div style={{ background:'#fff', borderRadius:12, padding:20, maxWidth:400, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)', maxHeight:'80vh', overflowY:'auto' }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+          <span style={{ fontWeight:700, fontSize:15, color:'#1e1b4b' }}>🔍 AI Fotoğraf Analizi</span>
+          <button style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'#6b7280' }} onClick={onKapat}>✕</button>
+        </div>
+        {sonuc.tani && (
+          <div style={{ marginBottom:10 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', marginBottom:4 }}>Tanı</div>
+            <div style={{ fontSize:14, color:'#1f2937', lineHeight:1.5 }}>{sonuc.tani}</div>
+          </div>
+        )}
+        {sonuc.muhendis_notu && (
+          <div style={{ marginBottom:10 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', marginBottom:4 }}>Mühendis Notu</div>
+            <div style={{ fontSize:13, color:'#374151', lineHeight:1.5 }}>{sonuc.muhendis_notu}</div>
+          </div>
+        )}
+        {sonuc.onerilen_ilaclar?.length > 0 && (
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', textTransform:'uppercase', marginBottom:6 }}>Önerilen İlaçlar</div>
+            {sonuc.onerilen_ilaclar.map((il, i) => (
+              <div key={i} style={{ background:'#f5f3ff', borderRadius:8, padding:'8px 12px', marginBottom:6 }}>
+                <div style={{ fontWeight:700, fontSize:13, color:'#1f2937' }}>{il.ticari_ad}</div>
+                <div style={{ fontSize:12, color:'#4f46e5', fontWeight:600 }}>{il.doz} {il.doz_birimi}</div>
+                <div style={{ fontSize:12, color:'#6b7280' }}>{il.gerekce}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const DJANGO_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
   .replace(/\/api.*$/, '')
 const mediaUrl = (path) => {
@@ -18,8 +58,24 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
   const [fotograflar, setFotograflar] = useState(null)
   const [buyuk, setBuyuk]             = useState(null)
   const [yukluyor, setYukluyor]       = useState(false)
+  const [aiYukleniyor, setAiYukleniyor] = useState(null) // foto id
+  const [aiSonuc, setAiSonuc]           = useState(null)
   const inputRef   = useRef()
   const kameraRef  = useRef()
+
+  const aiAnaliz = async (f, e) => {
+    e.stopPropagation()
+    setAiYukleniyor(f.id)
+    try {
+      const url = mediaUrl(f.fotograf)
+      const res = await api.post('/ai/fotograf-teshis-url/', { url, isletme_id: isletmeId })
+      setAiSonuc(res.data)
+    } catch {
+      alert('AI analizi başarısız oldu.')
+    } finally {
+      setAiYukleniyor(null)
+    }
+  }
 
   useEffect(() => {
     api.get(`/ciftci/isletme/${isletmeId}/fotograflar/`)
@@ -54,6 +110,7 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
 
   return (
     <div style={s.panel} onClick={e => e.stopPropagation()}>
+      <AiSonucModal sonuc={aiSonuc} onKapat={() => setAiSonuc(null)} />
 
       {/* Lightbox — panel içinde fixed, tüm ekranı kaplar */}
       {buyuk && (
@@ -106,9 +163,19 @@ export default function IsletmeFotografPanel({ isletmeId, canUpload = true, onKa
               />
               <div style={s.thumbAlt}>
                 <span style={s.yukleyenAd}>{f.yukleyen_rol === 'muhendis' ? '👷' : '👨‍🌾'} {f.yukleyen_ad}</span>
-                {canUpload && (
-                  <button style={s.silBtn} onClick={e => { e.stopPropagation(); sil(f.id) }}>✕</button>
-                )}
+                <div style={{ display:'flex', gap:2 }}>
+                  <button
+                    style={s.aiBtn}
+                    onClick={e => aiAnaliz(f, e)}
+                    disabled={aiYukleniyor === f.id}
+                    title="AI ile analiz et"
+                  >
+                    {aiYukleniyor === f.id ? '⏳' : '🔍'}
+                  </button>
+                  {canUpload && (
+                    <button style={s.silBtn} onClick={e => { e.stopPropagation(); sil(f.id) }}>✕</button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -132,6 +199,7 @@ const s = {
   thumbAlt:     { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 5px' },
   yukleyenAd:   { fontSize: '0.68rem', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60px' },
   silBtn:       { background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: '0.75rem', padding: 0, flexShrink: 0 },
+  aiBtn:        { background: '#ede9fe', border: 'none', cursor: 'pointer', fontSize: '1rem', padding: '4px 6px', borderRadius: '6px', flexShrink: 0 },
   lightbox:     { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 },
   lightboxImg:  { maxWidth: '92vw', maxHeight: '88vh', borderRadius: '8px', objectFit: 'contain' },
   lightboxKapat:{ position: 'fixed', top: '16px', right: '20px', background: 'none', border: 'none', color: '#fff', fontSize: '2rem', cursor: 'pointer', zIndex: 10000 },

@@ -21,4 +21,9 @@ urlpatterns = [
 
     # Çiftçi
     path('benim/', views.CiftciRecetelerView.as_view(), name='ciftci-receteler'),
+    path('ozet/',  views.CiftciReceteOzetView.as_view(), name='ciftci-recete-ozet'),
+
+    # Şablonlar
+    path('sablonlar/',       views.ReceteSablonListView.as_view(),   name='sablon-list'),
+    path('sablonlar/<int:pk>/', views.ReceteSablonDetayView.as_view(), name='sablon-detay'),
 ]

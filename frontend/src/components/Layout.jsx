@@ -48,6 +48,7 @@ export default function Layout({ children }) {
   const [icmalYukleniyor, setIcmalYukleniyor] = useState(false)
   const [haritaAcik, setHaritaAcik] = useState(false)
   const [bayiiTalepler, setBayiiTalepler] = useState([])
+  const [bayiiKritikStok, setBayiiKritikStok] = useState(0)
   const [bayiiTalepPanel, setBayiiTalepPanel] = useState(false)
   const [bayiiTalepIslemde, setBayiiTalepIslemde] = useState(null)
   const [bayiiIcmalAcik, setBayiiIcmalAcik] = useState(false)
@@ -75,16 +76,83 @@ export default function Layout({ children }) {
     setDrawerAcik(false)
   }
 
-  // Mühendis ise gelen talepleri yükle
+  const [soruPanel, setSoruPanel]       = useState(false)
+  const [sorular, setSorular]           = useState([])
+  const [bekleyenSoruSayi, setBekleyenSoruSayi] = useState(0)
+  const [soruYanit, setSoruYanit]       = useState({}) // { [soruId]: string }
+  const [soruYanitIslemde, setSoruYanitIslemde] = useState(null)
+
+  // Mühendis ise gelen talepleri ve bekleyen soruları yükle
   useEffect(() => {
     if (kullanici?.rol !== 'muhendis') return
     api.get('/ciftci/gelen-talepler/').then(r => setTalepler(r.data)).catch(() => {})
+    api.get('/ciftci/muhendis/bekleyen-sorular/').then(r => setBekleyenSoruSayi(r.data.bekleyen || 0)).catch(() => {})
   }, [kullanici])
 
-  // Bayii ise gelen çiftçi taleplerini yükle
+  const soruPanelAc = async () => {
+    setSoruPanel(p => !p)
+    if (!soruPanel) {
+      const res = await api.get('/ciftci/muhendis/sorular/?durum=bekliyor').catch(() => ({ data: [] }))
+      setSorular(res.data)
+    }
+  }
+
+  const soruYanitla = async (id) => {
+    const yanit = (soruYanit[id] || '').trim()
+    if (!yanit) return
+    setSoruYanitIslemde(id)
+    try {
+      await api.patch(`/ciftci/muhendis/sorular/${id}/yanit/`, { yanit })
+      setSorular(p => p.filter(s => s.id !== id))
+      setBekleyenSoruSayi(p => Math.max(0, p - 1))
+      setSoruYanit(p => { const n = { ...p }; delete n[id]; return n })
+    } catch {}
+    setSoruYanitIslemde(null)
+  }
+
+  const [duyuruPanel, setDuyuruPanel]   = useState(false)
+  const [duyuruForm, setDuyuruForm]     = useState({ baslik: '', metin: '', urun: '', il_filtre: '', ilce_filtre: '' })
+  const [duyuruUrunler, setDuyuruUrunler] = useState([])
+  const [duyuruGonderiyor, setDuyuruGonderiyor] = useState(false)
+  const [duyuruSonuc, setDuyuruSonuc]   = useState(null) // { hedef_ciftci }
+  const [duyuruHata, setDuyuruHata]     = useState('')
+
+  const duyuruPanelAc = async () => {
+    setDuyuruPanel(p => !p)
+    setDuyuruSonuc(null)
+    if (duyuruUrunler.length === 0) {
+      api.get('/ciftci/urunler/').then(r => setDuyuruUrunler(r.data)).catch(() => {})
+    }
+  }
+
+  const duyuruGonder = async () => {
+    if (!duyuruForm.baslik.trim() || !duyuruForm.metin.trim()) {
+      setDuyuruHata('Başlık ve mesaj zorunlu.'); return
+    }
+    setDuyuruGonderiyor(true)
+    setDuyuruHata('')
+    try {
+      const payload = {
+        baslik: duyuruForm.baslik,
+        metin:  duyuruForm.metin,
+        urun:   duyuruForm.urun || null,
+        il_filtre:   duyuruForm.il_filtre,
+        ilce_filtre: duyuruForm.ilce_filtre,
+      }
+      const res = await api.post('/ciftci/muhendis/duyuru/', payload)
+      setDuyuruSonuc(res.data)
+      setDuyuruForm({ baslik: '', metin: '', urun: '', il_filtre: '', ilce_filtre: '' })
+    } catch (e) {
+      setDuyuruHata(e.response?.data?.detail || 'Gönderilemedi.')
+    }
+    setDuyuruGonderiyor(false)
+  }
+
+  // Bayii ise gelen çiftçi taleplerini ve kritik stokları yükle
   useEffect(() => {
     if (kullanici?.rol !== 'bayii') return
     api.get('/ciftci/bayii/bekleyen/').then(r => setBayiiTalepler(r.data)).catch(() => {})
+    api.get('/katalog/bayii/stok/').then(r => setBayiiKritikStok(r.data.kritik_sayisi || 0)).catch(() => {})
   }, [kullanici])
 
   const bayiiIcmalAc = async () => {
@@ -181,7 +249,6 @@ export default function Layout({ children }) {
       await api.post('/ciftci/muhendise-talep/', { muhendis_id: muhendisId, isletme_id: parseInt(danIsletme) })
       setDanismanPanel(false)
     } catch (err) {
-      console.error('Danışman talep hatası:', err.response?.status, err.response?.data)
       setDanHata(err.response?.data?.hata || err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Talep gönderilemedi.')
     } finally { setDanIslemde(null) }
   }
@@ -208,7 +275,6 @@ export default function Layout({ children }) {
       const b = await api.get('/ciftci/bayiilerim/')
       setBayiilerim(b.data)
     } catch (err) {
-      console.error('Bayii talep hatası:', err.response?.status, err.response?.data)
       setBayiiHata(err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Talep gönderilemedi.')
     } finally { setBayiiIslemde(null) }
   }
@@ -261,9 +327,12 @@ export default function Layout({ children }) {
 
         {menu.map(m => (
           <button key={m.yol}
-            style={{ ...s.drawerItem, ...(location.pathname === m.yol ? s.drawerItemAktif : {}) }}
+            style={{ ...s.drawerItem, ...(location.pathname === m.yol ? s.drawerItemAktif : {}), display:'flex', alignItems:'center', gap:'8px' }}
             onClick={() => git(m.yol)}>
-            {m.etiket}
+            <span>{m.etiket}</span>
+            {m.yol === '/bayii/urunler' && bayiiKritikStok > 0 && (
+              <span style={{ ...s.drawerBadge, background:'#dc2626' }}>{bayiiKritikStok}</span>
+            )}
           </button>
         ))}
 
@@ -285,7 +354,7 @@ export default function Layout({ children }) {
             {ayarlarAcik && (
               <div style={{ paddingLeft:'12px' }}>
                 <button style={{ ...s.drawerItem, fontSize:'0.92rem' }} onClick={() => git('/ciftci/talepler')}>
-                  🔔 İzinler
+                  🔔 İzinler & Talepler
                 </button>
                 <button style={{ ...s.drawerItem, fontSize:'0.92rem' }} onClick={() => { setDrawerAcik(false); danismanPanelAc() }}>
                   👨‍💼 Danışman Ekle
@@ -344,12 +413,119 @@ export default function Layout({ children }) {
 
         {kullanici?.rol === 'muhendis' && (
           <>
+            <button style={{ ...s.drawerItem, display:'flex', alignItems:'center', gap:'8px' }}
+              onClick={soruPanelAc}>
+              <span>💬 Çiftçi Soruları</span>
+              {bekleyenSoruSayi > 0 && <span style={s.drawerBadge}>{bekleyenSoruSayi}</span>}
+              <span style={{ marginLeft:'auto', fontSize:'0.75rem', color:'#aaa' }}>{soruPanel ? '▲' : '▼'}</span>
+            </button>
+            {soruPanel && (
+              <div style={s.talepPanel}>
+                {sorular.length === 0
+                  ? <p style={s.talepBos}>Bekleyen soru yok.</p>
+                  : sorular.map(q => (
+                    <div key={q.id} style={{ ...s.talepKart, borderLeft:'3px solid #f59e0b' }}>
+                      <div style={s.talepAd}>👨‍🌾 {q.ciftci_ad} {q.ciftci_soyad}</div>
+                      {q.isletme_ad && <div style={s.talepIsletme}>🌱 {q.isletme_ad}</div>}
+                      <div style={{ fontSize:'0.85rem', color:'#333', margin:'4px 0' }}>{q.metin}</div>
+                      {q.fotograf_url && (
+                        <img src={q.fotograf_url} alt="" style={{ maxWidth:'100%', maxHeight:120, borderRadius:6, marginBottom:4, objectFit:'cover' }} />
+                      )}
+                      {q.ai_teshis && (
+                        <div style={{ background:'#f5f3ff', borderRadius:6, padding:'6px 8px', fontSize:'0.78rem', color:'#4c1d95', marginBottom:6 }}>
+                          🤖 {q.ai_teshis}
+                        </div>
+                      )}
+                      <textarea
+                        placeholder="Yanıtınızı yazın..."
+                        rows={2}
+                        style={{ width:'100%', padding:'6px 8px', border:'1px solid #ddd', borderRadius:6, fontSize:'0.83rem', boxSizing:'border-box', resize:'vertical' }}
+                        value={soruYanit[q.id] || ''}
+                        onChange={e => setSoruYanit(p => ({ ...p, [q.id]: e.target.value }))}
+                      />
+                      <button
+                        style={{ ...s.kabul, marginTop:4, width:'100%' }}
+                        disabled={soruYanitIslemde === q.id || !(soruYanit[q.id] || '').trim()}
+                        onClick={() => soruYanitla(q.id)}>
+                        {soruYanitIslemde === q.id ? '…' : 'Yanıtla'}
+                      </button>
+                    </div>
+                  ))
+                }
+              </div>
+            )}
+            <div style={s.drawerAyrac} />
+          </>
+        )}
+
+        {kullanici?.rol === 'muhendis' && (
+          <>
             <button style={s.drawerItem} onClick={() => { setDrawerAcik(false); setHaritaAcik(true) }}>
               🗺️ Ziyaret Planı Haritası
             </button>
             <button style={s.drawerItem} onClick={() => { setDrawerAcik(false); icmalAc() }}>
               📋 Reçete İcmali
             </button>
+            <div style={s.drawerAyrac} />
+            <button style={{ ...s.drawerItem, display:'flex', alignItems:'center', gap:'8px' }}
+              onClick={duyuruPanelAc}>
+              <span>📢 Toplu Mesaj Gönder</span>
+              <span style={{ marginLeft:'auto', fontSize:'0.75rem', color:'#aaa' }}>{duyuruPanel ? '▲' : '▼'}</span>
+            </button>
+            {duyuruPanel && (
+              <div style={{ padding:'10px 14px', background:'#f8fdf9', borderRadius:8, margin:'4px 8px' }}>
+                {duyuruSonuc ? (
+                  <div style={{ textAlign:'center', padding:'12px 0' }}>
+                    <div style={{ fontSize:'1.5rem' }}>✅</div>
+                    <div style={{ fontWeight:600, color:'#1a7a4a', marginBottom:4 }}>Mesaj Gönderildi</div>
+                    <div style={{ fontSize:'0.85rem', color:'#555' }}>
+                      <strong>{duyuruSonuc.hedef_ciftci}</strong> çiftçiye ulaştı.
+                    </div>
+                    <button style={{ marginTop:10, ...s.kabul }} onClick={() => setDuyuruSonuc(null)}>
+                      Yeni Mesaj
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div style={s.duyuruAlan}>
+                      <label style={s.duyuruEtiket}>Başlık *</label>
+                      <input style={s.duyuruGirdi} placeholder="Örn: Kırmızı örümcek uyarısı"
+                        value={duyuruForm.baslik}
+                        onChange={e => setDuyuruForm(f => ({ ...f, baslik: e.target.value }))} />
+                    </div>
+                    <div style={s.duyuruAlan}>
+                      <label style={s.duyuruEtiket}>Mesaj *</label>
+                      <textarea style={{ ...s.duyuruGirdi, minHeight:72, resize:'vertical' }}
+                        placeholder="Çiftçilere iletmek istediğiniz bilgi veya uyarı..."
+                        value={duyuruForm.metin}
+                        onChange={e => setDuyuruForm(f => ({ ...f, metin: e.target.value }))} />
+                    </div>
+                    <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                      <div style={{ ...s.duyuruAlan, flex:1, minWidth:100 }}>
+                        <label style={s.duyuruEtiket}>Ürün filtresi</label>
+                        <select style={s.duyuruGirdi} value={duyuruForm.urun}
+                          onChange={e => setDuyuruForm(f => ({ ...f, urun: e.target.value }))}>
+                          <option value="">Tümü</option>
+                          {duyuruUrunler.map(u => <option key={u.id} value={u.id}>{u.ad}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ ...s.duyuruAlan, flex:1, minWidth:90 }}>
+                        <label style={s.duyuruEtiket}>İlçe filtresi</label>
+                        <input style={s.duyuruGirdi} placeholder="Kumluca"
+                          value={duyuruForm.ilce_filtre}
+                          onChange={e => setDuyuruForm(f => ({ ...f, ilce_filtre: e.target.value }))} />
+                      </div>
+                    </div>
+                    {duyuruHata && <p style={{ color:'#dc2626', fontSize:'0.8rem', margin:'4px 0' }}>{duyuruHata}</p>}
+                    <button style={{ ...s.kabul, width:'100%', marginTop:8 }}
+                      disabled={duyuruGonderiyor}
+                      onClick={duyuruGonder}>
+                      {duyuruGonderiyor ? 'Gönderiliyor…' : '📢 Gönder'}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </>
         )}
 
@@ -794,6 +970,9 @@ const s = {
   talepPanel:  { padding: '0 12px 10px' },
   talepBos:    { color: '#aaa', fontSize: '0.85rem', textAlign: 'center', padding: '12px 0' },
   talepKart:   { background: '#f8fdf9', border: '1px solid #d0eada', borderRadius: '8px', padding: '10px 12px', marginBottom: '8px' },
+  duyuruAlan:  { marginBottom: 8 },
+  duyuruEtiket:{ display: 'block', fontSize: '0.78rem', color: '#555', fontWeight: 500, marginBottom: 3 },
+  duyuruGirdi: { width: '100%', padding: '6px 8px', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.85rem', boxSizing: 'border-box' },
   talepAd:     { fontWeight: '600', fontSize: '0.9rem', color: '#1a1a1a', marginBottom: '2px' },
   talepIsletme:{ fontSize: '0.82rem', color: '#555', marginBottom: '2px' },
   talepTarih:  { fontSize: '0.75rem', color: '#aaa', marginBottom: '8px' },

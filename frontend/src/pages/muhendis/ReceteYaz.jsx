@@ -1,5 +1,6 @@
 /* eslint react/prop-types: 0 */
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import useBreakpoint from '../../hooks/useBreakpoint'
 
@@ -20,6 +21,7 @@ function urunEmoji(urunAd, cesitAd) {
   return '🌿'
 }
 import api from '../../services/api'
+import AiTeshisButonu from '../../components/AiTeshisButonu'
 
 // ─── ID üretici ───
 let _id = Date.now()
@@ -67,6 +69,106 @@ function Bolum({ ikon, baslik, acik, onToggle, onEkle, ekleEtiket, children }) {
 const SABIT_YONTEMLER = ['Yapraktan', 'Damla', 'Sulama Suyu', 'Toprak']
 
 // ─── 💧 Sulama satırı ───
+// ── İlaç / Gübre Autocomplete ─────────────────────────────────────────────
+function IlacAutocomplete({ value, katalogAnahtar, katalogIndex, onSec, style }) {
+  const [ara, setAra]       = useState(value || '')
+  const [acik, setAcik]     = useState(false)
+  const [kursor, setKursor] = useState(-1)
+  const [pos, setPos]       = useState({ top: 0, left: 0, width: 0 })
+  const inputRef            = useRef()
+  const listeRef            = useRef()
+
+  useEffect(() => { setAra(value || '') }, [value])
+
+  const eslesmeler = useCallback(() => {
+    if (!ara.trim()) return katalogAnahtar.slice(0, 60)
+    const q = ara.toLowerCase()
+    const esles = katalogAnahtar.filter(k => k.toLowerCase().includes(q))
+    esles.sort((a, b) => {
+      const aB = katalogIndex[a]?._bayii ? -1 : 0
+      const bB = katalogIndex[b]?._bayii ? -1 : 0
+      if (aB !== bB) return aB - bB
+      const aB2 = a.toLowerCase().startsWith(q) ? -1 : 0
+      const bB2 = b.toLowerCase().startsWith(q) ? -1 : 0
+      return aB2 - bB2
+    })
+    return esles.slice(0, 40)
+  }, [ara, katalogAnahtar, katalogIndex])
+
+  const liste = eslesmeler()
+
+  const sec = (k) => {
+    setAra(k); setAcik(false); setKursor(-1)
+    onSec(k); inputRef.current?.blur()
+  }
+
+  const onKey = (e) => {
+    if (!acik) { if (e.key === 'ArrowDown') { setAcik(true); setKursor(0) } return }
+    if (e.key === 'ArrowDown')  { e.preventDefault(); setKursor(p => Math.min(p + 1, liste.length - 1)) }
+    else if (e.key === 'ArrowUp')  { e.preventDefault(); setKursor(p => Math.max(p - 1, 0)) }
+    else if (e.key === 'Enter' && kursor >= 0) { e.preventDefault(); sec(liste[kursor]) }
+    else if (e.key === 'Escape') { setAcik(false) }
+  }
+
+  useEffect(() => {
+    if (kursor >= 0 && listeRef.current) {
+      listeRef.current.children[kursor]?.scrollIntoView({ block: 'nearest' })
+    }
+  }, [kursor])
+
+  const hesaplaPos = () => {
+    if (!inputRef.current) return
+    const r = inputRef.current.getBoundingClientRect()
+    setPos({ top: r.bottom + window.scrollY + 2, left: r.left + window.scrollX, width: Math.max(r.width, 280) })
+  }
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        style={style}
+        placeholder="İlaç / gübre adı…"
+        value={ara}
+        autoComplete="off"
+        onChange={e => { setAra(e.target.value); setAcik(true); setKursor(-1); onSec(''); hesaplaPos() }}
+        onFocus={() => { hesaplaPos(); setAcik(true) }}
+        onBlur={() => setTimeout(() => setAcik(false), 150)}
+        onKeyDown={onKey}
+      />
+      {acik && liste.length > 0 && createPortal(
+        <div ref={listeRef} style={{
+          position: 'absolute', top: pos.top, left: pos.left, width: pos.width,
+          zIndex: 9999, background: '#fff', border: '1px solid #d1d5db', borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.15)', maxHeight: 280, overflowY: 'auto',
+        }}>
+          {liste.map((k, i) => {
+            const u = katalogIndex[k]
+            const bayii = u?._bayii
+            return (
+              <div key={k} onMouseDown={() => sec(k)} style={{
+                padding: '8px 12px', cursor: 'pointer', fontSize: '0.9rem',
+                background: i === kursor ? '#f0faf5' : '#fff',
+                borderBottom: '1px solid #f3f4f6',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                {bayii && <span style={{ color: '#1a7a4a', fontSize: '0.75rem', fontWeight: 700 }}>★</span>}
+                <span style={{ flex: 1 }}>{k}</span>
+                {u?._turEtiket && (
+                  <span style={{ fontSize: '0.75rem', color: '#9ca3af', whiteSpace: 'nowrap' }}>
+                    {u._tip === 'ilac' ? 'İlaç' : 'Gübre'} · {u._turEtiket}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
+
 function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
   const [turFiltre, setTurFiltre] = useState('')
 
@@ -84,7 +186,7 @@ function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
       .map(u => u._tip === 'ilac' ? `İlaç: ${u._turEtiket}` : `Gübre: ${u._turEtiket}`)
   )].sort()
 
-  // Ürün datalist — hem tür hem yöntem filtresine göre
+  // Ürün listesi — hem tür hem yöntem filtresine göre
   const filtreliAnahtar = Object.keys(katalogIndex).filter(k => {
     const u = katalogIndex[k]
     if (turFiltre) {
@@ -151,23 +253,16 @@ function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
         </select>
       </td>
       <td style={s.td}>
-        <input
-          list={`dl-${satir._id}`}
-          style={s.tdGirdi}
-          placeholder="İlaç / gübre adı…"
+        <IlacAutocomplete
           value={satir.urun_ad}
-          onChange={e => {
-            onChange({ ...satir, urun_ad: e.target.value, urun_id: '', urun_tip: '' })
-            autofill(e.target.value)
+          katalogAnahtar={filtreliAnahtar}
+          katalogIndex={katalogIndex}
+          style={{ ...s.tdGirdi, padding: '8px 7px', minWidth: 160 }}
+          onSec={ad => {
+            onChange({ ...satir, urun_ad: ad, urun_id: '', urun_tip: '' })
+            if (ad) autofill(ad)
           }}
         />
-        <datalist id={`dl-${satir._id}`}>
-          {filtreliAnahtar.map(k => <option key={k} value={k} />)}
-        </datalist>
-      </td>
-      <td style={s.td}>
-        <input style={{...s.tdGirdi, color:'#666', background:'#fafafa', minWidth:'100px'}}
-          value={etkenMadde} readOnly placeholder="—" />
       </td>
       <td style={s.td}>
         <input style={{...s.tdGirdi, width:'60px'}} type="number" placeholder="—"
@@ -189,9 +284,6 @@ function DonemSatiri({ satir, katalogIndex, alanDekar, onChange, onSil }) {
           <option value="m2">/ m²</option>
           <option value="sabit">sabit</option>
         </select>
-      </td>
-      <td style={{...s.td, background:'#f9fafb'}}>
-        <input style={{...s.tdGirdi, width:'80px'}} value={satir.toplam || '—'} readOnly />
       </td>
       <td style={s.td}>
         <select style={{...s.tdGirdi, width:'110px', color: satir.yontem ? '#1a7a4a' : '#aaa'}}
@@ -251,7 +343,7 @@ function SulamaBolum({ donemler, setDonemler, katalogIndex, alanDekar }) {
 
   const satirEkle = (donemId) => {
     setDonemler(prev => prev.map(d => d._id === donemId
-      ? { ...d, satirlar: [...d.satirlar, { _id: uid(), urun_ad:'', urun_id:'', urun_tip:'', tur:'', doz:'', birim:'ml', baz:'100L', toplam:'', yontem:'Yapraktan' }] }
+      ? { ...d, satirlar: [{ _id: uid(), urun_ad:'', urun_id:'', urun_tip:'', tur:'', doz:'', birim:'ml', baz:'100L', toplam:'', yontem:'Yapraktan' }, ...d.satirlar] }
       : d
     ))
   }
@@ -298,7 +390,7 @@ function SulamaBolum({ donemler, setDonemler, katalogIndex, alanDekar }) {
             <table style={s.tablo}>
               <thead>
                 <tr>
-                  {['Tür','İlaç / Gübre','Etken Madde','Doz','Birim','Baz','İşletme Toplam','Uygulama','Not',''].map(h => (
+                  {['Tür','İlaç / Gübre','Doz','Birim','Baz','Uygulama','Not',''].map(h => (
                     <th key={h} style={s.th}>{h}</th>
                   ))}
                 </tr>
@@ -326,7 +418,7 @@ function SulamaBolum({ donemler, setDonemler, katalogIndex, alanDekar }) {
 }
 
 // ─── 📝 Notlar Bloğu — Tanı + Çiftçiye Not + Kültürel + Biyo&Takip ───
-function NotlarBlok({ form, degis, kulturel, setKulturel, biyolojik, setBiyolojik, takip, setTakip }) {
+function NotlarBlok({ form, degis, kulturel, setKulturel, biyolojik, setBiyolojik, takip, setTakip, urunAdi, alanDekar, ciftciId }) {
   const [acik, setAcik] = useState({ tani: true, not: false, kulturel: false, biyo: false })
   const toggle = (k) => setAcik(p => ({ ...p, [k]: !p[k] }))
 
@@ -492,14 +584,21 @@ export default function ReceteYaz() {
 
   // Bayii filtreli katalog index — seçili opsiyonlara göre önceliklendirme
   const filtreliKatalogIndex = (() => {
-    if (!bayiiStok && !bolgeStok) return katalogIndex
+    const bayiiAdlar = new Set([
+      ...bayiiUrunler.ilaclar, ...bayiiUrunler.gubreler,
+      ...bolgeUrunler.ilaclar, ...bolgeUrunler.gubreler,
+    ])
+    // _bayii işareti — autocomplete'te ★ göstermek için
+    const isaret = (idx) => Object.fromEntries(
+      Object.entries(idx).map(([k, v]) => [k, bayiiAdlar.has(k) ? { ...v, _bayii: true } : v])
+    )
+    if (!bayiiStok && !bolgeStok) return isaret(katalogIndex)
     const oncelikli = new Set([
       ...(bayiiStok ? [...bayiiUrunler.ilaclar, ...bayiiUrunler.gubreler] : []),
       ...(bolgeStok ? [...bolgeUrunler.ilaclar, ...bolgeUrunler.gubreler] : []),
     ])
-    if (oncelikli.size === 0) return katalogIndex
-    // Sadece bu ürünleri göster
-    return Object.fromEntries(Object.entries(katalogIndex).filter(([k]) => oncelikli.has(k)))
+    if (oncelikli.size === 0) return isaret(katalogIndex)
+    return isaret(Object.fromEntries(Object.entries(katalogIndex).filter(([k]) => oncelikli.has(k))))
   })()
 
   // Auto-save — her değişiklikte 1.5sn debounce ile localStorage'a yaz
@@ -716,6 +815,8 @@ ${analizler.length === 0
     }
   }
 
+  const [detayAcik, setDetayAcik] = useState(true)
+
   return (
     <div style={{ ...s.sayfa, padding: isMobile ? '1rem' : '1.5rem 2rem' }}>
       {/* Üst bar */}
@@ -724,13 +825,21 @@ ${analizler.length === 0
           ← Geri
         </button>
         <h2 style={s.baslik}>Yeni Reçete</h2>
-        <button style={s.kaydetBtn} onClick={kaydet} disabled={kaydediyor}>
-          {kaydediyor ? 'Kaydediliyor…' : '💾 Kaydet'}
-        </button>
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          <button
+            onClick={() => setDetayAcik(p => !p)}
+            title={detayAcik ? 'Bilgileri gizle' : 'Bilgileri göster'}
+            style={{ background:'none', border:'1px solid #ddd', borderRadius:6, padding:'5px 10px', cursor:'pointer', fontSize:'0.8rem', color:'#666' }}>
+            {detayAcik ? '▲ Daralt' : '▼ Genişlet'}
+          </button>
+          <button style={s.kaydetBtn} onClick={kaydet} disabled={kaydediyor}>
+            {kaydediyor ? 'Kaydediliyor…' : '💾 Kaydet'}
+          </button>
+        </div>
       </div>
 
       {/* Temel bilgiler */}
-      <div style={s.temelKart}>
+      <div style={{ ...s.temelKart, ...(detayAcik ? {} : { padding:0, border:'none', margin:0, overflow:'hidden', maxHeight:0 }) }}>
         <div style={s.temelGrid}>
           <div style={{...s.alan, gridColumn:'span 3'}}>
             <label style={s.etiket}>İşletme *</label>
@@ -802,18 +911,32 @@ ${analizler.length === 0
         donemler={donemler} setDonemler={setDonemler}
         katalogIndex={filtreliKatalogIndex} alanDekar={alanDekar} />
 
-      <NotlarBlok
-        form={form} degis={degis}
-        kulturel={kulturel} setKulturel={setKulturel}
-        biyolojik={biyolojik} setBiyolojik={setBiyolojik}
-        takip={takip} setTakip={setTakip} />
-
+      {detayAcik && (
+        <NotlarBlok
+          form={form} degis={degis}
+          kulturel={kulturel} setKulturel={setKulturel}
+          biyolojik={biyolojik} setBiyolojik={setBiyolojik}
+          takip={takip} setTakip={setTakip}
+          urunAdi={seciliIsletme?.isletme?.urun_ad}
+          alanDekar={alanDekar}
+          ciftciId={seciliIsletme?.ciftci_id}
+        />
+      )}
 
       {/* Alt bar */}
       {hata && <p style={s.hata}>{hata}</p>}
       <div style={s.altBar}>
         <button style={s.iptalBuyukBtn} onClick={() => navigate('/muhendis/receteler')}>Vazgeç</button>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <AiTeshisButonu
+            urunAdi={seciliIsletme?.isletme?.urun_ad}
+            alanDekar={alanDekar}
+            ciftciId={seciliIsletme?.ciftci_id}
+            onUygula={(sonuc) => {
+              degis({ target: { name: 'tani', value: sonuc.tani || '' } })
+              if (sonuc.muhendis_notu) degis({ target: { name: 'ciftciye_not', value: sonuc.muhendis_notu } })
+            }}
+          />
           <button
             style={s.ziyaretBuyukBtn}
             onClick={() => navigate(`/muhendis/takvim${form.isletme ? `?isletme=${form.isletme}` : ''}`)}

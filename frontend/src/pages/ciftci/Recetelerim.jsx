@@ -37,8 +37,7 @@ export default function Recetelerim() {
     }
     api.get('/recete/benim/')
       .then(res => setReceteler(res.data))
-      .catch(err => {
-        console.error(err)
+      .catch(() => {
         setHata('Reçeteler yüklenirken hata oluştu.')
       })
       .finally(() => setYukleniyor(false))

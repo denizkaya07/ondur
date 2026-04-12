@@ -8,12 +8,14 @@ Group=www-data
 WorkingDirectory=/var/www/ondur
 EnvironmentFile=/var/www/ondur/.env
 ExecStart=/var/www/ondur/venv/bin/gunicorn \
-    --workers 3 \
+    --workers 5 \
+    --timeout 60 \
     --bind 127.0.0.1:8000 \
     --access-logfile /var/log/ondur/access.log \
     --error-logfile  /var/log/ondur/error.log \
     ondur.wsgi:application
 Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

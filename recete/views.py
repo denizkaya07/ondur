@@ -6,13 +6,13 @@ from django.utils import timezone
 from ondur.permissions import IsMuhendis, IsCiftci, IsMuhendisOrCiftci
 from .models import (
     Recete, UygulamaAdimi, UygulamaAdimKalemi,
-    ReceteVersiyon, ReceteYorum, ReceteFotograf
+    ReceteVersiyon, ReceteYorum, ReceteFotograf, ReceteSablon
 )
 from .serializers import (
     ReceteSerializer, ReceteKisaSerializer,
     UygulamaAdimiSerializer, UygulamaAdimiEkleSerializer,
     ReceteYorumSerializer, ReceteFotografSerializer,
-    ReceteVersiyonSerializer
+    ReceteVersiyonSerializer, ReceteSablonSerializer
 )
 from ciftci.models import MuhendisIsletme
 
@@ -134,6 +134,57 @@ class ReceteFotografListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(yukleyen=self.request.user, recete_id=self.kwargs['recete_pk'])
+
+
+# ── ŞABLON ──
+
+class ReceteSablonListView(generics.ListCreateAPIView):
+    permission_classes = [IsMuhendis]
+    serializer_class   = ReceteSablonSerializer
+
+    def get_queryset(self):
+        return ReceteSablon.objects.filter(muhendis=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(muhendis=self.request.user)
+
+
+class ReceteSablonDetayView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsMuhendis]
+    serializer_class   = ReceteSablonSerializer
+
+    def get_queryset(self):
+        return ReceteSablon.objects.filter(muhendis=self.request.user)
+
+
+# ── ÇİFTÇİ ÖZET ──
+
+class CiftciReceteOzetView(APIView):
+    permission_classes = [IsCiftci]
+
+    def get(self, request):
+        receteler = (
+            Recete.objects
+            .filter(
+                isletme__ciftci__kullanici=request.user,
+                durum=Recete.Durum.ONAYLANDI
+            )
+            .select_related('muhendis', 'isletme')
+            .order_by('isletme_id', '-tarih')
+        )
+        ozet = {}
+        for r in receteler:
+            if r.isletme_id in ozet:
+                continue
+            bekleyen = r.adimlar.filter(tamamlandi=False).count()
+            ozet[r.isletme_id] = {
+                'isletme_id':   r.isletme_id,
+                'son_recete_id': r.id,
+                'son_tarih':    str(r.tarih),
+                'muhendis_ad':  r.muhendis.get_full_name() or r.muhendis.username,
+                'bekleyen_adim': bekleyen,
+            }
+        return Response(list(ozet.values()))
 
 
 # ── VERSİYON ──

@@ -93,8 +93,7 @@ export default function Isletmelerim() {
       setIsletmeler(is.data)
       setUrunler(ur.data)
       setReceteler(rec.data)
-    }).catch(err => {
-      console.error(err)
+    }).catch(() => {
       setHata('Veriler yüklenirken hata oluştu.')
     }).finally(() => setYukleniyor(false))
   }, [authYukleniyor, kullanici, navigate])
@@ -354,7 +353,7 @@ export default function Isletmelerim() {
                           : receteler.filter(r => r.isletme === i.id).map(r => (
                               <div key={r.id}>
                                 <div
-                                  style={{ ...s.receteKart, ...(recSecili === r.id ? { borderColor:'#1a7a4a' } : {}), cursor:'pointer' }}
+                                  style={{ ...s.receteKart, ...(recSecili === r.id ? { border:'1px solid #1a7a4a' } : {}), cursor:'pointer' }}
                                   onClick={async () => {
                                     if (recSecili === r.id) { setRecSecili(null); return }
                                     setRecSecili(r.id)
@@ -534,7 +533,7 @@ const s = {
   analizYok:        { fontSize: '0.83rem', color: '#aaa', marginTop: '6px' },
   aksiyonlar:       { display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' },
   aksiyonBtn:       { padding: '5px 14px', background: '#f5f5f5', color: '#555', border: '1px solid #e0e0e0', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem' },
-  aksiyonAktif:     { background: '#e8f5ee', color: '#1a7a4a', borderColor: '#c8e6d4' },
+  aksiyonAktif:     { background: '#e8f5ee', color: '#1a7a4a', border: '1px solid #c8e6d4' },
   panelIcerik:      { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' },
   receteKart:       { padding: '8px 12px', background: '#f8fdf9', border: '1px solid #d0eada', borderRadius: '6px' },
   toprakBaslikSatir:{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #f0f0f0' },

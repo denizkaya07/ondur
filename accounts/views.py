@@ -1,19 +1,30 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import Kullanici
 from .serializers import KayitSerializer, KullaniciSerializer, TelefonTokenSerializer
 
 
+class KayitThrottle(AnonRateThrottle):
+    scope = 'kayit'
+
+
+class GirisThrottle(AnonRateThrottle):
+    scope = 'giris'
+
+
 class TelefonGirisView(TokenObtainPairView):
-    serializer_class = TelefonTokenSerializer
+    serializer_class  = TelefonTokenSerializer
+    throttle_classes  = [GirisThrottle]
 
 
 class KayitView(generics.CreateAPIView):
     queryset           = Kullanici.objects.all()
     serializer_class   = KayitSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes   = [KayitThrottle]
 
 
 class ProfilView(generics.RetrieveAPIView):

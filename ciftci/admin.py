@@ -1,5 +1,14 @@
 from django.contrib import admin
-from .models import Urun, UrunCesit, Ciftci, Isletme, MuhendisIsletme
+from .models import Urun, UrunCesit, Ciftci, Isletme, MuhendisIsletme, CiftciSorusu
+
+
+@admin.register(CiftciSorusu)
+class CiftciSorusuAdmin(admin.ModelAdmin):
+    list_display  = ['ciftci', 'isletme', 'durum', 'olusturma']
+    list_filter   = ['durum']
+    search_fields = ['ciftci__ad', 'ciftci__soyad', 'metin']
+    date_hierarchy = 'olusturma'
+    readonly_fields = ['ai_teshis', 'olusturma']
 
 
 @admin.register(Urun)

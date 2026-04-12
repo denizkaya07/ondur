@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Ciftci, Isletme, Urun, UrunCesit, MuhendisIsletme, ToprakAnaliz, IsletmeFotograf
+from .models import Ciftci, Isletme, Urun, UrunCesit, MuhendisIsletme, ToprakAnaliz, IsletmeFotograf, CiftciSorusu, MuhendisDuyuru
 
 
 class UrunSerializer(serializers.ModelSerializer):
@@ -128,3 +128,36 @@ class CiftciBayiiSerializer(serializers.ModelSerializer):
                   'bayii', 'bayii_adi', 'bayii_il', 'bayii_ilce', 'bayii_telefon',
                   'baslatan', 'durum', 'talep_tarihi', 'yanit_tarihi', 'aktif']
         read_only_fields = ['ciftci', 'baslatan', 'durum', 'talep_tarihi', 'yanit_tarihi']
+
+
+class CiftciSorusuSerializer(serializers.ModelSerializer):
+    ciftci_ad    = serializers.CharField(source='ciftci.ad',    read_only=True)
+    ciftci_soyad = serializers.CharField(source='ciftci.soyad', read_only=True)
+    isletme_ad   = serializers.CharField(source='isletme.ad',   read_only=True, default='')
+    fotograf_url = serializers.SerializerMethodField()
+
+    def get_fotograf_url(self, obj):
+        if not obj.fotograf:
+            return None
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.fotograf.url) if request else obj.fotograf.url
+
+    class Meta:
+        model  = CiftciSorusu
+        fields = ['id', 'ciftci', 'ciftci_ad', 'ciftci_soyad', 'isletme', 'isletme_ad',
+                  'metin', 'fotograf', 'fotograf_url', 'ai_teshis',
+                  'durum', 'yanit', 'yanitleyen', 'yanit_tarihi', 'olusturma']
+        read_only_fields = ['ciftci', 'ai_teshis', 'durum', 'yanit', 'yanitleyen', 'yanit_tarihi', 'olusturma']
+
+
+class MuhendisDuyuruSerializer(serializers.ModelSerializer):
+    muhendis_ad  = serializers.CharField(source='muhendis.first_name', read_only=True)
+    muhendis_soyad = serializers.CharField(source='muhendis.last_name', read_only=True)
+    urun_ad      = serializers.CharField(source='urun.ad', read_only=True, default='')
+
+    class Meta:
+        model  = MuhendisDuyuru
+        fields = ['id', 'muhendis', 'muhendis_ad', 'muhendis_soyad',
+                  'baslik', 'metin', 'urun', 'urun_ad',
+                  'il_filtre', 'ilce_filtre', 'olusturma']
+        read_only_fields = ['muhendis', 'olusturma']

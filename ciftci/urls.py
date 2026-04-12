@@ -33,4 +33,15 @@ urlpatterns = [
     path('isletme/<int:isletme_id>/toprak-analiz/', views.ToprakAnalizListView.as_view(), name='toprak-analiz'),
     path('isletme/<int:isletme_id>/fotograflar/', views.IsletmeFotografListView.as_view(), name='isletme-fotograflar'),
     path('isletme/<int:isletme_id>/fotograflar/<int:pk>/', views.IsletmeFotografSilView.as_view(), name='isletme-fotograf-sil'),
+
+    # Mühendis toplu duyuru
+    path('muhendis/duyuru/', views.MuhendisDuyuruView.as_view(), name='muhendis-duyuru'),
+    path('duyurular/', views.CiftciDuyurularView.as_view(), name='ciftci-duyurular'),
+
+    # Çiftçi ↔ Mühendis sorular
+    path('sorularim/', views.CiftciSorularimView.as_view(), name='ciftci-sorularim'),
+    path('soru-gonder/', views.CiftciSoruGonderView.as_view(), name='ciftci-soru-gonder'),
+    path('muhendis/sorular/', views.MuhendisSorularView.as_view(), name='muhendis-sorular'),
+    path('muhendis/sorular/<int:pk>/yanit/', views.MuhendisSorularView.as_view(), name='muhendis-soru-yanit'),
+    path('muhendis/bekleyen-sorular/', views.MuhendisBekleyenSorularView.as_view(), name='muhendis-bekleyen-sorular'),
 ]
