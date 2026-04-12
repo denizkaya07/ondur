@@ -90,12 +90,13 @@ class GubreKisaSerializer(serializers.ModelSerializer):
 
 
 class BayiiUrunSerializer(serializers.ModelSerializer):
-    ilac_ad  = serializers.CharField(source='ilac.ticari_ad', read_only=True)
-    gubre_ad = serializers.CharField(source='gubre.ticari_ad', read_only=True)
+    ilac_ad     = serializers.CharField(source='ilac.ticari_ad', read_only=True)
+    gubre_ad    = serializers.CharField(source='gubre.ticari_ad', read_only=True)
+    stok_kritik = serializers.BooleanField(read_only=True)
 
     class Meta:
         model  = BayiiUrun
-        fields = ['id', 'ilac', 'ilac_ad', 'gubre', 'gubre_ad', 'aktif']
+        fields = ['id', 'ilac', 'ilac_ad', 'gubre', 'gubre_ad', 'aktif', 'stok', 'stok_esik', 'stok_kritik']
 
 
 class UreticiSerializer(serializers.ModelSerializer):

@@ -259,8 +259,17 @@ class BayiiUrun(models.Model):
                  blank=True,
                  on_delete=models.SET_NULL
              )
-    aktif  = models.BooleanField(default=True)
-    ekleme = models.DateTimeField(auto_now_add=True)
+    aktif       = models.BooleanField(default=True)
+    stok        = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Stok (kg/lt/adet)')
+    stok_esik   = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Uyarı Eşiği')
+    ekleme      = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def stok_kritik(self):
+        """Stok eşiğin altındaysa True döner."""
+        if self.stok is not None and self.stok_esik is not None:
+            return self.stok <= self.stok_esik
+        return False
 
     def __str__(self):
         urun = self.ilac or self.gubre
@@ -292,3 +301,28 @@ class MuhendisBayii(models.Model):
         verbose_name        = 'Mühendis Bayii'
         verbose_name_plural = 'Mühendis Bayiiler'
         unique_together     = ('muhendis', 'bayii')
+
+
+class HalFiyat(models.Model):
+    """Haftalık hal toptancı fiyatları — manuel veya import ile girilir."""
+    urun      = models.ForeignKey(
+                    'ciftci.Urun',
+                    on_delete=models.CASCADE,
+                    related_name='hal_fiyatlar'
+                )
+    hal_sehir = models.CharField(max_length=100, verbose_name='Hal Şehri')
+    tarih     = models.DateField(verbose_name='Hafta Tarihi', db_index=True)
+    fiyat_min = models.DecimalField(max_digits=8, decimal_places=2, verbose_name='Min Fiyat (₺/kg)')
+    fiyat_max = models.DecimalField(max_digits=8, decimal_places=2, verbose_name='Max Fiyat (₺/kg)')
+    fiyat_ort = models.DecimalField(max_digits=8, decimal_places=2, verbose_name='Ort Fiyat (₺/kg)')
+    kaynak    = models.CharField(max_length=200, blank=True, verbose_name='Kaynak')
+
+    class Meta:
+        verbose_name        = 'Hal Fiyatı'
+        verbose_name_plural = 'Hal Fiyatları'
+        ordering            = ['-tarih']
+        unique_together     = ('urun', 'hal_sehir', 'tarih')
+        indexes             = [models.Index(fields=['urun', 'hal_sehir', 'tarih'])]
+
+    def __str__(self):
+        return f'{self.urun.ad} — {self.hal_sehir} — {self.tarih}: {self.fiyat_ort}₺'

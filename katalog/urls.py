@@ -16,9 +16,12 @@ urlpatterns = [
 
     # Bayii
     path('bayii/urunlerim/', views.BayiiUrunListView.as_view(), name='bayii-urun-list'),
+    path('bayii/stok/', views.BayiiUrunStokView.as_view(), name='bayii-stok-liste'),
+    path('bayii/stok/<int:pk>/', views.BayiiUrunStokView.as_view(), name='bayii-stok-guncelle'),
     path('bayii/analiz/', views.BayiiAnalizView.as_view(), name='bayii-analiz'),
     path('bayii/bolgem/',       views.BayiiBolgesiView.as_view(),     name='bayii-bolge'),
     path('bayii/listele/',      views.BayiiListesiView.as_view(),     name='bayii-listele'),
     path('bayii/musterilerim/', views.BayiiMusterileriView.as_view(), name='bayii-musteriler'),
     path('isletme-bayii-urunler/', views.IsletmeBayiiUrunleriView.as_view(), name='isletme-bayii-urunler'),
+    path('hal-fiyat/', views.HalFiyatView.as_view(), name='hal-fiyat'),
 ]

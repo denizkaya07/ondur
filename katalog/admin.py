@@ -3,7 +3,7 @@ from .models import (
     Uretici, Bayii, EtkenMadde,
     Ilac, IlacEtkenMadde,
     Gubre, GubreEtkenMadde,
-    BayiiUrun, MuhendisBayii
+    BayiiUrun, MuhendisBayii, HalFiyat
 )
 
 
@@ -63,3 +63,12 @@ class BayiiUrunAdmin(admin.ModelAdmin):
 class MuhendisBayiiAdmin(admin.ModelAdmin):
     list_display  = ['muhendis', 'bayii', 'baslangic', 'aktif']
     list_filter   = ['aktif']
+
+
+@admin.register(HalFiyat)
+class HalFiyatAdmin(admin.ModelAdmin):
+    list_display   = ['urun', 'hal_sehir', 'tarih', 'fiyat_min', 'fiyat_ort', 'fiyat_max', 'kaynak']
+    list_filter    = ['urun', 'hal_sehir']
+    search_fields  = ['urun__ad', 'hal_sehir']
+    date_hierarchy = 'tarih'
+    ordering       = ['-tarih']

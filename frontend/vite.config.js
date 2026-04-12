@@ -3,9 +3,20 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('development'),
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        'process.env.NODE_ENV': JSON.stringify('development'),
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
+      devOptions: { enabled: false },
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', '*.png', '*.svg'],
       manifest: {
